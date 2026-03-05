@@ -1,6 +1,17 @@
 // popup_password.js
 // Temporary password popup for page load (deprecate when no longer needed)
+
 (function() {
+  // Option 2: Remember password in browser memory (localStorage)
+  const PASSWORD_KEY = 'flyoverdemo_password_ok';
+  const PASSWORD_VALUE = 'NEWBS';
+  try {
+    if (localStorage.getItem(PASSWORD_KEY) === '1') {
+      // Already entered, skip popup
+      return;
+    }
+  } catch {}
+
   // Create overlay (dark background)
   const overlay = document.createElement('div');
   overlay.style.position = 'fixed';
@@ -12,7 +23,7 @@
   overlay.style.display = 'flex';
   overlay.style.alignItems = 'center';
   overlay.style.justifyContent = 'center';
-  overlay.style.zIndex = 2147483647; // Max z-index to ensure always on top
+  overlay.style.zIndex = 2147483647;
 
   // Create white filter layer (semi-transparent)
   const whiteFilter = document.createElement('div');
@@ -63,12 +74,13 @@
   btn.textContent = 'Submit';
   btn.style.marginTop = '1em';
   btn.onclick = function() {
-    if (input.value === 'NEWBS') {
+    if (input.value === PASSWORD_VALUE) {
+      // Remember password in localStorage
+      try { localStorage.setItem(PASSWORD_KEY, '1'); } catch {}
       // Remove overlay and all children
       if (overlay && overlay.parentNode) {
         overlay.parentNode.removeChild(overlay);
       }
-      // Defensive: restore pointer events on body (in case overlay blocked them)
       document.body.style.pointerEvents = '';
     } else {
       error.style.display = 'block';

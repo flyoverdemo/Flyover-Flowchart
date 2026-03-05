@@ -1,0 +1,10 @@
+# User-provided assets (kept local)
+/user data/*
+
+# OS / editor noise
+.DS_Store
+Thumbs.db
+
+# Optional temp artifacts
+*.tmp
+*.temp

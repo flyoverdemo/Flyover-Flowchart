@@ -1,0 +1,77 @@
+{
+  "character": {
+    "name": "---",
+    "class": "---",
+    "subclass": "",
+    "level": null,
+    "race": "---",
+    "background": "---",
+    "alignment": "---",
+    "experiencePoints": 0
+  },
+  "combat": {
+    "armorClass": null,
+    "hitPoints": {
+      "max": null,
+      "current": null,
+      "temp": 0
+    },
+    "hitDice": "1d10",
+    "speed": null,
+    "initiative": 0,
+    "proficiencyBonus": null
+  },
+  "abilityScores": {
+    "strength": {
+      "score": null,
+      "modifier": null,
+      "savingThrow": null,
+      "skills": []
+    },
+    "dexterity": {
+      "score": null,
+      "modifier": null,
+      "savingThrow": null,
+      "skills": []
+    },
+    "constitution": {
+      "score": null,
+      "modifier": null,
+      "savingThrow": null,
+      "skills": []
+    },
+    "intelligence": {
+      "score": null,
+      "modifier": null,
+      "savingThrow": null,
+      "skills": []
+    },
+    "wisdom": {
+      "score": null,
+      "modifier": null,
+      "savingThrow": null,
+      "skills": []
+    },
+    "charisma": {
+      "score": null,
+      "modifier": null,
+      "savingThrow": null,
+      "skills": []
+    }
+  },
+  "actions": {
+    "primary": [],
+    "bonus": [],
+    "reaction": []
+  },
+  "spells": [],
+  "features": [],
+  "equipment": {},
+  "proficiencies": {
+    "armor": [],
+    "weapons": [],
+    "tools": [],
+    "savingThrows": [],
+    "skills": []
+  }
+}

@@ -1,0 +1,3064 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Action Flowchart Builder</title>
+  <style>
+    :root {
+      /* Original Colors */
+      --primary-color: #3b82f6;
+      --secondary-color: #10b981;
+      --yellow-accent: #f59e0b;
+      --bg-grid: #e5eef7;
+      --header-bg: #f8fafc;
+      --text-main: #1e293b;
+      --panel-bg: #ffffff;
+      
+      /* New Folder System Colors */
+      --yellow-main: #f59e0b;
+      --yellow-light: #fbbf24;
+      --purple-main: #8b5cf6;
+      --purple-light: #a78bfa;
+      --grey-main: #64748b;
+      --grey-light: #94a3b8;
+      --design-main: #1e293b;
+      --design-light: #334155;
+      --design-accent: #38bdf8;
+      --folder-tan: #f3e5ab;
+      --folder-tan-dark: #e5d394;
+      --folder-text: #1e293b;
+      --bg-color: #f8fafc;
+      
+      /* Card Dimensions */
+      --card-height: 155px;
+      --card-width: 240px;
+      
+      /* Position Constants */
+      --pos-1-y: 0px;    
+      --pos-2-y: 35px;  
+      --pos-3-y: 70px;
+      --folder-offset: 0px;
+      --label-bar-height: 42px;
+      
+      /* Dynamic height variable */
+      --folder-dynamic-height: calc(var(--card-height) + var(--pos-3-y) + (var(--folder-offset) * 2));
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      color: var(--text-main);
+      background-color: #f1f5f9;
+      overflow: hidden;
+      touch-action: none; 
+    }
+
+    header {
+      background-color: var(--header-bg);
+      padding: 12px 24px;
+      text-align: center;
+      font-weight: 600;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      z-index: 100;
+    }
+
+    main {
+      flex: 1;
+      position: relative;
+      overflow: hidden;
+      background-color: #ffffff;
+      background-image: 
+        linear-gradient(var(--bg-grid) 1px, transparent 1px),
+        linear-gradient(90deg, var(--bg-grid) 1px, transparent 1px);
+      background-size: 40px 40px;
+    }
+
+    #world {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 5000px;
+      height: 5000px;
+      transform-origin: 0 0;
+      pointer-events: none;
+    }
+
+    #connection-layer {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 1;
+    }
+
+    .node {
+      position: absolute;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 14px;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+      z-index: 10;
+      user-select: none;
+      pointer-events: auto;
+    }
+
+    /* Fixed Roll Overlay Styles */
+    #roll-display-overlay {
+      position: fixed;
+      top: 40px;
+      right: 40px;
+      background: white;
+      border-radius: 12px;
+      padding: 16px 24px;
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+      border: 1px solid rgba(0,0,0,0.05);
+      z-index: 1000;
+      pointer-events: none;
+      opacity: 0;
+      transform: translateY(-20px) scale(0.9);
+      transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-width: 140px;
+    }
+
+    #roll-display-overlay.show {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+
+    .roll-label {
+      font-size: 10px;
+      font-weight: 800;
+      color: var(--grey-main);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 4px;
+    }
+
+    .roll-main {
+      font-size: 32px;
+      font-weight: 900;
+      color: var(--folder-text);
+      line-height: 1;
+    }
+
+    .roll-math {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--grey-light);
+      margin-top: 4px;
+    }
+
+    /* Folder Card System */
+    .card-stack {
+      position: absolute;
+      width: var(--card-width);
+      height: calc(var(--card-height) + var(--pos-3-y));
+      margin-top: calc(var(--label-bar-height) + var(--folder-offset));
+      pointer-events: auto;
+      z-index: 20;
+    }
+
+    .folder-label-bar {
+      position: absolute;
+      top: calc(-1 * var(--folder-offset) - var(--label-bar-height));
+      left: calc(-1 * var(--folder-offset)); 
+      width: calc(100% + (var(--folder-offset) * 2));
+      height: var(--label-bar-height);
+      background-color: var(--folder-tan);
+      z-index: 60; 
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      border-radius: 6px 6px 0 0;
+      padding: 0 12px;
+    }
+
+    .label-bar-text {
+      color: var(--folder-text);
+      font-size: 14px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      flex-grow: 1;
+      text-align: center;
+      margin-left: 20px;
+      pointer-events: none;
+    }
+
+    .title-toggle {
+      width: 16px;
+      height: 16px;
+      border: 2px solid var(--folder-text);
+      border-radius: 3px;
+      cursor: pointer;
+      transition: background 0.2s ease;
+      pointer-events: auto;
+      z-index: 100;
+      flex-shrink: 0;
+    }
+
+    .title-toggle.active {
+      background-color: var(--folder-text);
+    }
+    
+    .folder-back {
+      position: absolute;
+      top: calc(-1 * var(--folder-offset));
+      left: calc(-1 * var(--folder-offset));
+      width: calc(100% + (var(--folder-offset) * 2));
+      height: var(--folder-dynamic-height);
+      background-color: var(--folder-tan-dark);
+      border-radius: 8px;
+      z-index: 0;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+      border: 1px solid rgba(0,0,0,0.05);
+      transition: height 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    /* Seamless integration when panel is collapsed in bottom position */
+    #card-stack.panel-collapsed .folder-back {
+      border-radius: 8px 8px 0 0;
+    }
+
+    #card-stack.panel-collapsed .side-panel .panel-header {
+      border-radius: 0;
+    }
+
+    .side-panel {
+      position: absolute;
+      top: calc(-1 * var(--folder-offset));
+      left: calc(var(--card-width) + var(--folder-offset));
+      width: calc(var(--card-width) + (var(--folder-offset) * 2));
+      height: calc(var(--card-height) + var(--pos-3-y) + (var(--folder-offset) * 2));
+      background-color: var(--folder-tan-dark);
+      border-radius: 8px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+      border: 1px solid rgba(0,0,0,0.05);
+      opacity: 0;
+      transform: scale(0.95);
+      transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+      pointer-events: none;
+      display: flex;
+      flex-direction: column;
+      padding: 0;
+      color: var(--folder-text);
+      z-index: 25;
+      overflow: hidden;
+    }
+
+    .side-panel.show {
+      opacity: 1;
+      transform: scale(1);
+      pointer-events: auto;
+    }
+
+    /* Side panel position classes */
+    .side-panel.pos-right {
+      left: calc(var(--card-width) + var(--folder-offset));
+      top: calc(-1 * var(--folder-offset));
+    }
+
+    .side-panel.pos-left {
+      right: calc(var(--card-width) + var(--folder-offset));
+      left: auto;
+      top: calc(-1 * var(--folder-offset));
+    }
+
+    .side-panel.pos-bottom {
+      left: calc(-1 * var(--folder-offset));
+      top: calc(var(--folder-dynamic-height) + var(--folder-offset));
+      z-index: 5;
+    }
+
+    /* Collapsed state for bottom position - matches folder header style */
+    .side-panel.pos-bottom.collapsed {
+      height: var(--label-bar-height) !important;
+    }
+
+    .side-panel.pos-bottom.collapsed .panel-content {
+      display: none;
+    }
+
+    .side-panel.pos-bottom.collapsed .panel-header {
+      border-bottom: none;
+      margin-bottom: 0;
+      padding: 0 12px;
+      height: var(--label-bar-height);
+      background-color: var(--folder-tan);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+    .panel-header {
+      font-weight: 700;
+      font-size: 14px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--folder-text);
+      border-bottom: 2px solid rgba(0,0,0,0.1);
+      padding: 0 12px;
+      margin-bottom: 0;
+      cursor: grab;
+      user-select: none;
+      text-align: center;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: var(--label-bar-height);
+      box-sizing: border-box;
+      position: relative;
+      background-color: var(--folder-tan);
+      border-radius: 6px 6px 0 0;
+      flex-shrink: 0;
+    }
+
+    .panel-header:active {
+      cursor: grabbing;
+    }
+
+    .panel-header.pos-bottom {
+      text-align: center;
+      cursor: pointer;
+    }
+
+    /* Straight top edges when collapsed in bottom position */
+    .side-panel.pos-bottom.collapsed .panel-header {
+      border-radius: 0 0 6px 6px;
+    }
+
+    /* Collapse/expand arrow indicator for bottom position */
+    .side-panel.pos-bottom .panel-header::after {
+      content: '▲';
+      position: absolute;
+      right: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 10px;
+      opacity: 0.6;
+      transition: transform 0.3s;
+    }
+
+    .side-panel.pos-bottom.collapsed .panel-header::after {
+      transform: translateY(-50%) rotate(180deg);
+    }
+
+    .panel-content {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      padding: 15px;
+      flex: 1;
+      overflow-y: auto;
+      background-color: var(--folder-tan-dark);
+    }
+
+    .toggle-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .panel-toggle-square {
+      width: 20px;
+      height: 20px;
+      border: 1px solid var(--folder-text); 
+      border-radius: 4px;
+      cursor: pointer;
+      position: relative;
+      background: transparent;
+      flex-shrink: 0;
+      transition: opacity 0.2s;
+    }
+
+    .panel-toggle-square::after {
+      content: '';
+      position: absolute;
+      top: 3px;
+      left: 3px;
+      right: 3px;
+      bottom: 3px;
+      border-radius: 2px;
+      background-color: transparent;
+      transition: background-color 0.2s ease;
+    }
+
+    .panel-toggle-square.active::after {
+      background-color: var(--folder-text);
+    }
+
+    .panel-toggle-square.active.toggle-yellow::after {
+      background-color: var(--yellow-main);
+    }
+
+    .panel-toggle-square.active.toggle-purple::after {
+      background-color: var(--purple-main);
+    }
+
+    .panel-toggle-square.active.toggle-green::after {
+      background-color: var(--secondary-color);
+    }
+
+    .panel-toggle-square.locked {
+      cursor: not-allowed;
+    }
+
+    .panel-toggle-square.locked::after {
+      background-color: var(--grey-light) !important;
+    }
+
+    .panel-toggle-square:not(.locked):hover {
+      background: rgba(0,0,0,0.05);
+    }
+
+    .toggle-label {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+      color: var(--folder-text);
+    }
+
+    .panel-info-text {
+      margin-top: 8px;
+      font-size: 10px; 
+      line-height: 1.4; 
+      opacity: 0.6;
+      font-style: italic;
+    }
+
+    .card {
+      width: var(--card-width); 
+      height: var(--card-height); 
+      border-radius: 12px;
+      color: white; 
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      user-select: none;
+      overflow: hidden;
+      position: relative;
+      flex-shrink: 0;
+    }
+
+    .stack-card {
+      position: absolute;
+      left: 0;
+      transition: transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1), z-index 0.2s, opacity 0.3s;
+    }
+
+    .card-cost-header {
+      position: absolute;
+      top: 10px;
+      left: 0;
+      width: 100%;
+      text-align: center;
+      font-size: 9px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      opacity: 0.8;
+      pointer-events: none;
+    }
+
+    .card-green { background-color: var(--secondary-color); }
+    .card-yellow { background: linear-gradient(135deg, var(--yellow-light), var(--yellow-main)); }
+    .card-purple { background: linear-gradient(135deg, var(--purple-light), var(--purple-main)); }
+    .card-grey { background: linear-gradient(135deg, var(--grey-light), var(--grey-main)); }
+    
+    .card.at-pos-1 {
+      z-index: 30;
+      transform: translateY(var(--pos-1-y));
+      opacity: 1;
+    }
+
+    .card.at-pos-2 {
+      z-index: 20;
+      transform: translateY(var(--pos-2-y));
+      opacity: 1;
+    }
+
+    .card.at-pos-3 {
+      z-index: 10;
+      transform: translateY(var(--pos-3-y));
+      opacity: 1;
+    }
+
+    .card.hidden {
+      pointer-events: none;
+      opacity: 0;
+      transform: translateY(var(--pos-3-y)) scale(0.9);
+      z-index: 0;
+    }
+
+    .card.swapping {
+      z-index: 45 !important; 
+      transform: translateY(calc(var(--card-height) + 10px)) scale(1.02);
+      transition: transform 0.3s ease-out, z-index 0s;
+    }
+
+    .card-footer {
+      font-size: 10px;
+      font-weight: 800;
+      text-transform: uppercase;
+      padding: 12px;
+      text-align: center;
+      background: rgba(0,0,0,0.15);
+      border-top: 1px solid rgba(255,255,255,0.2);
+      cursor: pointer;
+    }
+
+    .card.at-pos-1 .card-footer {
+      cursor: default;
+    }
+
+    .card-body {
+      display: flex;
+      justify-content: space-around;
+      flex: 1;
+      align-items: center;
+      padding: 0 10px;
+      padding-top: 20px;
+    }
+
+    .stat-group {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px; 
+    }
+
+    .stat-box {
+      width: 44px;
+      height: 44px;
+      background: rgba(255, 255, 255, 0.2);
+      border-radius: 8px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      font-weight: 700;
+      font-size: 14px;
+      cursor: pointer;
+      transition: background 0.2s, outline 0.2s, box-shadow 0.2s, transform 0.2s;
+      position: relative;
+      overflow: hidden;
+      outline: 0px solid transparent;
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    /* TO HIT stat box - linked to primary action */
+    .stat-box.stat-hit:hover {
+      background: rgba(59, 130, 246, 0.6);
+    }
+
+    .stat-box.stat-hit:hover:not(.modified) {
+      outline: 2px solid var(--primary-color);
+    }
+
+    /* TO HIT unavailable - when primary action already used */
+    .stat-box.stat-hit.unavailable {
+      background: rgba(100, 116, 139, 0.4) !important;
+    }
+
+    .stat-box.stat-hit.unavailable.pressing {
+      background: rgba(100, 116, 139, 0.6) !important;
+    }
+
+    .stat-box-fixed-symbol {
+      position: absolute;
+      right: 4px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 12px;
+      height: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      pointer-events: none;
+      opacity: 0.85;
+    }
+
+    .stat-box.has-fixed-symbol .scroll-container {
+      padding-right: 10px;
+    }
+
+    .stat-box.pressing {
+      transform: scale(0.9) !important;
+      background: rgba(255, 255, 255, 0.4) !important;
+    }
+
+    .stat-box.modified {
+      outline: 2px solid var(--yellow-main);
+      box-shadow: 0 0 8px rgba(245, 158, 11, 0.4);
+    }
+
+    .stat-box:active {
+      background: rgba(255, 255, 255, 0.4);
+    }
+
+    .stat-label { 
+      font-size: 8px; 
+      font-weight: 800;
+      text-transform: uppercase;
+      opacity: 0.9; 
+    }
+
+    .scroll-container {
+      height: 44px; 
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+      pointer-events: none;
+    }
+
+    .scroll-item {
+      height: 44px;
+      line-height: 44px;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      text-align: center;
+    }
+
+    .card.stack-card:not(.at-pos-1) .card-body {
+      pointer-events: none;
+      opacity: 0.6;
+    }
+
+    .hidden { display: none !important; }
+
+    .primary-button { background-color: var(--primary-color); color: white; width: 160px; height: 60px; }
+    .action-button { background-color: #475569; color: white; width: 130px; height: 50px; }
+    .child-button { background-color: #94a3b8; color: white; width: 110px; height: 40px; }
+
+    /* Log Window Styles */
+    #log-window {
+      position: fixed;
+      bottom: 80px;
+      right: 20px;
+      width: 280px;
+      height: 350px;
+      background: var(--panel-bg);
+      border-radius: 12px;
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.2);
+      display: flex;
+      flex-direction: column;
+      z-index: 1000;
+      border: 1px solid #e2e8f0;
+      transform: translateY(20px);
+      opacity: 0;
+      pointer-events: none;
+      transition: transform 0.2s ease-out, opacity 0.2s ease-out, height 0s;
+    }
+
+    #log-window.visible {
+      transform: translateY(0);
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .log-header {
+      padding: 12px 16px;
+      background: #f8fafc;
+      border-bottom: 1px solid #e2e8f0;
+      font-weight: 700;
+      font-size: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      border-top-left-radius: 12px;
+      border-top-right-radius: 12px;
+      cursor: grab;
+      user-select: none;
+    }
+
+    .log-header:active {
+      cursor: grabbing;
+    }
+
+    .log-header-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      width: 100%;
+    }
+
+    .log-controls {
+      display: flex;
+      gap: 6px;
+      width: 100%;
+    }
+
+    .log-btn {
+      flex: 1;
+      padding: 4px;
+      font-size: 11px;
+      text-transform: uppercase;
+      border: 1px solid #cbd5e1;
+      background: white;
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: 700;
+      color: #64748b;
+      transition: all 0.2s;
+    }
+
+    .log-btn:hover {
+      background: #f1f5f9;
+      color: #334155;
+    }
+
+    .log-btn:active {
+      background: #e2e8f0;
+    }
+
+    .log-btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    #log-content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      pointer-events: auto;
+    }
+
+    .log-entry {
+      background: #f1f5f9;
+      padding: 8px 12px;
+      border-radius: 6px;
+      font-size: 13px;
+      border-left: 3px solid var(--primary-color);
+      color: #334155;
+    }
+
+    .log-entry.damage { border-left-color: #ef4444; }
+    .log-entry.hit { border-left-color: #10b981; }
+
+    /* Resize Handle */
+    #log-resize-handle {
+      height: 12px;
+      width: 100%;
+      cursor: ns-resize;
+      background: transparent;
+      border-bottom-left-radius: 12px;
+      border-bottom-right-radius: 12px;
+      transition: background 0.2s;
+      flex-shrink: 0;
+    }
+
+    #log-resize-handle:hover {
+      background: rgba(59, 130, 246, 0.1);
+    }
+
+    /* Character Info Resize Handle */
+    #char-info-resize-handle {
+      height: 12px;
+      width: 100%;
+      cursor: ns-resize;
+      background: transparent;
+      border-bottom-left-radius: 12px;
+      border-bottom-right-radius: 12px;
+      transition: background 0.2s;
+      flex-shrink: 0;
+    }
+
+    #char-info-resize-handle:hover {
+      background: rgba(59, 130, 246, 0.1);
+    }
+
+    /* Character Info Window Styles */
+    #character-info-window {
+      position: fixed;
+      top: 80px;
+      right: 20px;
+      width: 320px;
+      max-height: 500px;
+      background: var(--panel-bg);
+      border-radius: 12px;
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.2);
+      display: flex;
+      flex-direction: column;
+      z-index: 1000;
+      border: 1px solid #e2e8f0;
+      transform: translateY(-20px);
+      opacity: 0;
+      pointer-events: none;
+      transition: transform 0.2s ease-out, opacity 0.2s ease-out;
+    }
+
+    #character-info-window.visible {
+      transform: translateY(0);
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .char-info-header {
+      padding: 12px 16px;
+      background: #f8fafc;
+      border-bottom: 1px solid #e2e8f0;
+      font-weight: 700;
+      font-size: 14px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-top-left-radius: 12px;
+      border-top-right-radius: 12px;
+      cursor: grab;
+      user-select: none;
+    }
+
+    .char-info-header:active {
+      cursor: grabbing;
+    }
+
+    .char-info-controls {
+      display: flex;
+      gap: 6px;
+    }
+
+    .char-info-content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 12px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .char-info-section {
+      border-bottom: 1px solid #e2e8f0;
+      padding-bottom: 12px;
+    }
+
+    .char-info-section:last-child {
+      border-bottom: none;
+    }
+
+    .char-info-section-title {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      color: #64748b;
+      margin-bottom: 8px;
+      letter-spacing: 0.5px;
+    }
+
+    .char-info-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 4px 0;
+      font-size: 13px;
+    }
+
+    .char-info-label {
+      color: #64748b;
+      font-weight: 500;
+    }
+
+    .char-info-value {
+      color: #1e293b;
+      font-weight: 600;
+    }
+
+    .char-info-actions-list {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .char-info-resize-handle {
+      position: absolute;
+      bottom: 0;
+      right: 0;
+      width: 16px;
+      height: 16px;
+      background: #94a3b8;
+      cursor: ns-resize; /* Allow vertical resizing */
+      border-radius: 3px 0 0 3px;
+      opacity: 0.6;
+      transition: opacity 0.2s;
+    }
+
+    .char-info-resize-handle:hover {
+      opacity: 1;
+      background: #64748b;
+    }
+
+    .char-info-action-item {
+      background: #f1f5f9;
+      padding: 8px 12px;
+      border-radius: 6px;
+      border-left: 3px solid var(--primary-color);
+    }
+
+    .char-info-action-name {
+      font-weight: 700;
+      font-size: 12px;
+      color: #1e293b;
+      margin-bottom: 4px;
+    }
+
+    .char-info-action-detail {
+      font-size: 11px;
+      color: #64748b;
+    }
+
+    .char-info-empty {
+      text-align: center;
+      color: #94a3b8;
+      font-size: 12px;
+      padding: 20px;
+    }
+
+    .raw-data-section {
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      background: #f8fafc;
+      overflow: hidden;
+    }
+
+    .raw-data-title {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+      color: #475569;
+      padding: 8px 10px;
+      background: #eef2f7;
+      border-bottom: 1px solid #e2e8f0;
+    }
+
+    .raw-data-grid {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .raw-row {
+      display: grid;
+      grid-template-columns: 34% 66%;
+      gap: 8px;
+      padding: 6px 10px;
+      border-bottom: 1px solid #eef2f7;
+      align-items: start;
+      font-size: 11px;
+      line-height: 1.35;
+    }
+
+    .raw-row:last-child {
+      border-bottom: none;
+    }
+
+    .raw-key {
+      color: #64748b;
+      font-weight: 700;
+      word-break: break-word;
+    }
+
+    .raw-value {
+      color: #0f172a;
+      font-weight: 500;
+      word-break: break-word;
+    }
+
+    .raw-inline-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+    }
+
+    .raw-pill {
+      background: #e2e8f0;
+      color: #334155;
+      border: 1px solid #cbd5e1;
+      border-radius: 999px;
+      padding: 1px 6px;
+      font-size: 10px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .raw-textbox {
+      background: #ffffff;
+      border: 1px solid #cbd5e1;
+      border-radius: 6px;
+      padding: 6px 8px;
+      white-space: pre-wrap;
+      max-height: 170px;
+      overflow: auto;
+      font-size: 11px;
+      line-height: 1.35;
+      color: #1e293b;
+    }
+
+    .raw-nested {
+      display: grid;
+      gap: 4px;
+    }
+
+    .raw-nested-row {
+      display: grid;
+      grid-template-columns: 42% 58%;
+      gap: 6px;
+      padding: 3px 6px;
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 5px;
+      font-size: 10px;
+    }
+
+    .raw-nested-key {
+      color: #64748b;
+      font-weight: 700;
+    }
+
+    .raw-nested-value {
+      color: #1e293b;
+      font-weight: 600;
+      word-break: break-word;
+    }
+
+    footer {
+      background-color: var(--header-bg);
+      padding: 12px;
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+      z-index: 100;
+      border-top: 1px solid #e2e8f0;
+    }
+
+    .footer-button {
+      padding: 10px 20px;
+      border-radius: 6px;
+      border: 1px solid #cbd5e1;
+      background: white;
+      cursor: pointer;
+      font-weight: 500;
+      touch-action: manipulation;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .footer-button.active {
+      background: var(--primary-color);
+      color: white;
+      border-color: var(--primary-color);
+    }
+
+    /* Import PDF button drag-over state */
+    .footer-button#import-pdf.drag-over {
+      background: var(--primary-color);
+      color: white;
+      border-color: var(--primary-color);
+      transform: scale(1.05);
+    }
+    
+    .log-badge {
+      background: #ef4444;
+      color: white;
+      font-size: 9px;
+      padding: 1px 4px;
+      border-radius: 8px;
+      font-weight: 800;
+      min-width: 16px;
+      text-align: center;
+      display: inline-block;
+    }
+
+    .close-btn {
+      cursor: pointer;
+      font-size: 18px;
+      line-height: 1;
+      color: #94a3b8;
+    }
+
+    /* Fixed squares in upper left corner */
+    .fixed-squares {
+      position: fixed;
+      top: 80px;
+      left: 20px;
+      z-index: 2000;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      pointer-events: none;
+    }
+
+    .square-container {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      pointer-events: none;
+    }
+
+    .fixed-square {
+      width: 30px;
+      height: 30px;
+      background: transparent;
+      border: 2px solid black;
+      border-radius: 8px;
+      pointer-events: auto;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: black;
+      font-weight: 600;
+      font-size: 12px;
+      flex-shrink: 0;
+      position: relative;
+      transition: all 0.2s ease;
+    }
+
+    .fixed-square::before {
+      content: '';
+      position: absolute;
+      top: 3px;
+      left: 3px;
+      right: 3px;
+      bottom: 3px;
+      border-radius: 6px;
+      opacity: 0;
+      transition: opacity 0.2s ease;
+    }
+
+    .fixed-square.active::before {
+      opacity: 1;
+    }
+
+    .fixed-square#square-1.active::before {
+      background: var(--primary-color);
+    }
+
+    /* Pulse animation for primary action when TO HIT is hovered and square is not active */
+    @keyframes pulse-action {
+      0%, 100% { opacity: 0.3; }
+      50% { opacity: 1; }
+    }
+
+    .fixed-square#square-1.pulse-indicator::before {
+      background: var(--primary-color) !important;
+      animation: pulse-action 1.5s ease-in-out infinite !important;
+    }
+
+    /* Override active opacity when pulsing */
+    .fixed-square#square-1.active.pulse-indicator::before {
+      animation: pulse-action 1.5s ease-in-out infinite !important;
+    }
+
+    .fixed-square#square-2.active::before {
+      background: var(--yellow-accent);
+    }
+
+    .fixed-square#square-3.active::before {
+      background: #8b5cf6;
+    }
+
+    .square-label {
+      color: white;
+      font-weight: 600;
+      font-size: 14px;
+      pointer-events: none;
+      white-space: nowrap;
+      background: var(--primary-color);
+      padding: 4px 8px;
+      border-radius: 4px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      transition: background 0.2s ease;
+    }
+
+    .square-container:nth-child(1) .square-label {
+      background: var(--primary-color);
+    }
+
+    .square-container:nth-child(2) .square-label {
+      background: var(--yellow-accent);
+    }
+
+    .square-container:nth-child(3) .square-label {
+      background: #8b5cf6;
+    }
+
+    .fixed-square:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+    }
+
+    .fixed-square:active {
+      transform: translateY(0);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    }
+  </style>
+</head>
+<body>
+
+<header>Action Flowchart Builder</header>
+
+<!-- Fixed squares in upper left corner -->
+<div class="fixed-squares">
+  <div class="square-container">
+    <div class="fixed-square" id="square-1"></div>
+    <div class="square-label">Primary Action</div>
+  </div>
+  <div class="square-container">
+    <div class="fixed-square" id="square-2"></div>
+    <div class="square-label">Bonus Action</div>
+  </div>
+  <div class="square-container">
+    <div class="fixed-square" id="square-3"></div>
+    <div class="square-label">Reaction</div>
+  </div>
+</div>
+
+<!-- Roll Display Overlay -->
+<div id="roll-display-overlay">
+  <div class="roll-label" id="roll-type-label">Hit Roll</div>
+  <div class="roll-main" id="roll-total-val">0</div>
+  <div class="roll-math" id="roll-math-val">1d20 + 0</div>
+</div>
+
+<main id="canvas-mask">
+  <div id="log-window">
+    <div class="log-header" id="log-drag-handle">
+      <div class="log-header-top">
+        Action Log
+        <span class="close-btn" id="close-log">&times;</span>
+      </div>
+      <div class="log-controls">
+        <button id="clear-log-btn" class="log-btn">Clear</button>
+        <button id="undo-log-btn" class="log-btn" disabled>Undo</button>
+      </div>
+    </div>
+    <div id="log-content">
+      <div style="text-align: center; color: #94a3b8; font-size: 12px; margin-top: 20px;">No actions recorded yet.</div>
+    </div>
+    <div id="log-resize-handle"></div>
+  </div>
+
+  <!-- Character Info Window -->
+  <div id="character-info-window">
+    <div class="char-info-header" id="char-info-drag-handle">
+      <span>Character PDF Info</span>
+      <div style="display: flex; gap: 8px; margin-left: auto;">
+        <button id="toggle-raw-data-btn" class="char-info-btn" style="font-size: 11px; padding: 4px 8px; background: #1e293b; border: 1px solid #475569; color: #cbd5e1; cursor: pointer; border-radius: 3px; display: none;">Raw Data</button>
+        <span class="close-btn" id="close-char-info">&times;</span>
+      </div>
+    </div>
+    <div class="char-info-content" id="char-info-content">
+      <div class="char-info-empty">No character data loaded. Import a PDF to view character info.</div>
+    </div>
+    <div id="char-info-resize-handle"></div>
+  </div>
+
+  <div id="world">
+    <svg id="connection-layer">
+      <defs>
+        <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+          <path d="M 0 0 L 10 5 L 0 10 z" fill="#94a3b8" />
+        </marker>
+        <marker id="large-arrow-black" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="4" markerHeight="4" orient="auto">
+          <path d="M 0 0 L 10 5 L 0 10 z" fill="black" />
+        </marker>
+      </defs>
+    </svg>
+    
+    <div id="primary" class="node primary-button" style="left: 2500px; top: 1000px;">Primary Action</div>
+    
+    <div id="melee" class="node action-button hidden" style="left: 2350px; top: 1100px;">Melee Attack</div>
+    <div id="magic" class="node action-button hidden" style="left: 2650px; top: 1100px;">Magic Attack</div>
+    
+    <div id="unarmed" class="node child-button hidden" style="left: 2250px; top: 1200px;">Unarmed</div>
+    <div id="weapon" class="node child-button hidden" style="left: 2450px; top: 1200px;">Weapon</div>
+
+    <!-- New Folder Card Stack System -->
+    <div id="card-stack" class="card-stack hidden" style="left: 2250px; top: 1260px;">
+      <div class="folder-label-bar">
+        <span class="label-bar-text" id="active-label">Unarmed Attack</span>
+        <div class="title-toggle" id="global-toggle"></div>
+      </div>
+      <div class="folder-back" id="folder-back"></div>
+
+      <div id="card-0" class="card stack-card card-green" data-label="Unarmed Attack">
+        <div class="card-cost-header">COST: 1 Action</div>
+        <div class="card-body">
+          <div class="stat-group">
+            <span class="stat-label">RNG</span>
+            <div class="stat-box" id="rng-box">
+              <div class="scroll-container" id="rng-scroll">
+                <div class="scroll-item">20ft</div>
+                <div class="scroll-item">15ft</div>
+                <div class="scroll-item">10ft</div>
+                <div class="scroll-item">5ft</div>
+              </div>
+            </div>
+          </div>
+          <div class="stat-group">
+            <span class="stat-label">TO HIT</span>
+            <div class="stat-box stat-hit" id="hit-box">
+              <div class="scroll-container" id="hit-scroll"></div>
+            </div>
+          </div>
+          <div class="stat-group">
+            <span class="stat-label">DMG</span>
+            <div class="stat-box has-fixed-symbol" id="dmg-box">
+              <div class="scroll-container" id="dmg-scroll"></div>
+              <div class="stat-box-fixed-symbol" id="dmg-type-symbol">
+                <svg viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M21.5,14.5L13,23L11.5,21.5L12,19.5L10,17.5L8.5,18L7,16.5L4.5,19L3,17.5L5.5,15L4,13.5L4.5,12L2.5,10L0.5,11.5L2,4.5L9,2L14.5,7.5L21.5,14.5M10,8.5L8.5,10L11.5,13L13,11.5L10,8.5Z" />
+                </svg>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="card-footer">BASIC UNARMED ATTACK</div>
+      </div>
+
+      <div id="card-1" class="card stack-card card-yellow" data-label="Divine Strike">
+        <div class="card-cost-header">COST: 1 Bonus Action</div>
+        <div class="card-body">
+          <div class="stat-group">
+            <span class="stat-label">USE</span>
+            <div class="stat-box">1/1</div>
+          </div>
+          <div class="stat-group">
+            <span class="stat-label">LVL</span>
+            <div class="stat-box">9th</div>
+          </div>
+          <div class="stat-group">
+            <span class="stat-label">RAD</span>
+            <div class="stat-box">+4</div>
+          </div>
+        </div>
+        <div class="card-footer">DIVINE UNARMED ATTACK</div>
+      </div>
+
+      <div id="card-2" class="card stack-card card-purple" data-label="Blight Smite">
+        <div class="card-cost-header">COST: 1 Action</div>
+        <div class="card-body">
+          <div class="stat-group">
+            <span class="stat-label">RNG</span>
+            <div class="stat-box">30ft</div>
+          </div>
+          <div class="stat-group">
+            <span class="stat-label">SAVE</span>
+            <div class="stat-box">DC15</div>
+          </div>
+          <div class="stat-group">
+            <span class="stat-label">NEC</span>
+            <div class="stat-box">2d6</div>
+          </div>
+        </div>
+        <div class="card-footer">BLIGHT UNARMED ATTACK</div>
+      </div>
+
+      <!-- Side Panel for Folder Settings (child of card-stack) -->
+      <div class="side-panel pos-bottom collapsed" id="side-panel">
+        <div class="panel-header">FOLDER SETTINGS</div>
+        <div class="panel-content">
+          <div class="toggle-row">
+            <div class="panel-toggle-square active locked" onclick="event.stopPropagation();"></div>
+            <div class="toggle-label">Basic Attack</div>
+          </div>
+          <div class="toggle-row">
+            <div class="panel-toggle-square active toggle-yellow" onclick="handleCardToggle(1, this)"></div>
+            <div class="toggle-label">Divine Strike</div>
+          </div>
+          <div class="toggle-row">
+            <div class="panel-toggle-square active toggle-purple" onclick="handleCardToggle(2, this)"></div>
+            <div class="toggle-label">Blight Smite</div>
+          </div>
+          <div class="panel-info-text">
+            Toggle visibility of cards within this folder stack.
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<footer>
+  <button id="import-pdf" class="footer-button" title="Import PDF or JSON character file">
+    Import Character
+  </button>
+  <button id="toggle-track-actions" class="footer-button active">
+    Track Actions
+  </button>
+  <button id="reset-view" class="footer-button">Recenter View</button>
+  <button id="toggle-edit" class="footer-button">Edit Layout: OFF</button>
+  <button id="reset-positions" class="footer-button hidden">RESET</button>
+  <button id="toggle-log" class="footer-button">
+    Log
+    <span id="log-count" class="log-badge hidden">0</span>
+  </button>
+</footer>
+
+<!-- Character Data Modules -->
+<script src="open5e_api.js"></script>
+<script src="character_loader.js"></script>
+<script src="pdf_parser.js"></script>
+<script src="external_links.js"></script>
+<script>
+  // Initialize character data on page load
+  window.addEventListener('DOMContentLoaded', async () => {
+    try {
+      // Try to load from imported_characters.json first
+      const storedData = window.open5eAPI.getFromImportedCharacters();
+      
+      if (storedData) {
+        window.characterLoader.characterData = storedData;
+        window.characterLoader.applyToFlowchart();
+        console.log('[Init] Character loaded from localStorage');
+      } else {
+        // Load character data from JSON file as fallback
+        await window.characterLoader.loadCharacterData('chain_warden_data.json');
+      }
+      
+      // Apply to flowchart
+      window.characterLoader.applyToFlowchart();
+      
+      console.log('[Init] Character system initialized');
+      
+      // Optional: Enrich actions with Open5e data
+      if (window.characterLoader.characterData?.actions) {
+        const allActions = [
+          ...(window.characterLoader.characterData.actions.weapons || []),
+          ...(window.characterLoader.characterData.actions.spellAttacks || []),
+          ...(window.characterLoader.characterData.actions.abilities || [])
+        ];
+        
+        for (const action of allActions) {
+          try {
+            const enriched = await window.open5eAPI.enrichAction(action);
+            Object.assign(action, enriched);
+          } catch (e) {
+            console.warn('[Init] Could not enrich action:', e);
+          }
+        }
+        if (allActions.length > 0) {
+          console.log('[Init] Actions enriched with Open5e data');
+        }
+      }
+      
+      // Inject external links into cards
+      setTimeout(() => {
+        window.externalLinkManager.injectLinksIntoCards();
+      }, 500);
+      
+      // Show character info window by default
+      showCharacterInfo(window.characterLoader.characterData);
+      
+    } catch (error) {
+      console.warn('Character data not loaded (using defaults):', error.message);
+      // Show empty character info window
+      showCharacterInfo({});
+    }
+  });
+
+  // Character Info Window Functions
+  let charInfoVisible = false;
+  let currentCharacterData = null;
+  let isRawDataMode = false;
+  const charInfoWindow = document.getElementById('character-info-window');
+  const charInfoContent = document.getElementById('char-info-content');
+  const closeCharInfoBtn = document.getElementById('close-char-info');
+  const toggleRawDataBtn = document.getElementById('toggle-raw-data-btn');
+
+  function escapeHtml(value) {
+    return String(value)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+  }
+
+  function humanizeKey(key) {
+    return String(key)
+      .replace(/([a-z])([A-Z])/g, '$1 $2')
+      .replace(/[_-]+/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim()
+      .replace(/^./, c => c.toUpperCase());
+  }
+
+  function isPrimitive(value) {
+    return value === null || value === undefined || ['string', 'number', 'boolean'].includes(typeof value);
+  }
+
+  function renderPrimitiveValue(value) {
+    if (value === null || value === undefined || value === '') return '<span class="raw-value">—</span>';
+    if (typeof value === 'boolean' || typeof value === 'number') return `<span class="raw-value">${escapeHtml(value)}</span>`;
+
+    const text = String(value).trim();
+    const isLongText = text.length > 120 || text.includes('\n');
+    if (isLongText) {
+      return `<div class="raw-textbox">${escapeHtml(text)}</div>`;
+    }
+
+    return `<span class="raw-value">${escapeHtml(text)}</span>`;
+  }
+
+  function renderArrayValue(arr) {
+    if (!arr || arr.length === 0) return '<span class="raw-value">[]</span>';
+
+    const allPrimitive = arr.every(isPrimitive);
+    if (allPrimitive) {
+      const preview = arr.slice(0, 10).map(item => `<span class="raw-pill">${escapeHtml(item === '' ? '""' : item)}</span>`).join('');
+      const extra = arr.length > 10 ? `<span class="raw-pill">+${arr.length - 10} more</span>` : '';
+      return `<div class="raw-inline-list">${preview}${extra}</div>`;
+    }
+
+    const nestedItems = arr.slice(0, 5).map((item, idx) => {
+      if (isPrimitive(item)) {
+        return `<div class="raw-nested-row"><span class="raw-nested-key">#${idx + 1}</span><span class="raw-nested-value">${escapeHtml(item)}</span></div>`;
+      }
+      if (Array.isArray(item)) {
+        return `<div class="raw-nested-row"><span class="raw-nested-key">#${idx + 1}</span><span class="raw-nested-value">Array(${item.length})</span></div>`;
+      }
+      return `<div class="raw-nested-row"><span class="raw-nested-key">#${idx + 1}</span><span class="raw-nested-value">Object(${Object.keys(item || {}).length} keys)</span></div>`;
+    }).join('');
+
+    const extra = arr.length > 5 ? `<div class="raw-nested-row"><span class="raw-nested-key">More</span><span class="raw-nested-value">+${arr.length - 5} items</span></div>` : '';
+    return `<div class="raw-nested">${nestedItems}${extra}</div>`;
+  }
+
+  function renderObjectValue(obj) {
+    const entries = Object.entries(obj || {});
+    if (entries.length === 0) return '<span class="raw-value">{}</span>';
+
+    const rows = entries.slice(0, 12).map(([key, value]) => {
+      let renderedValue;
+      if (isPrimitive(value)) renderedValue = renderPrimitiveValue(value);
+      else if (Array.isArray(value)) renderedValue = `<span class="raw-nested-value">Array(${value.length})</span>`;
+      else renderedValue = `<span class="raw-nested-value">Object(${Object.keys(value || {}).length} keys)</span>`;
+
+      return `<div class="raw-nested-row"><span class="raw-nested-key">${escapeHtml(humanizeKey(key))}</span><span class="raw-nested-value">${renderedValue}</span></div>`;
+    }).join('');
+
+    const extra = entries.length > 12
+      ? `<div class="raw-nested-row"><span class="raw-nested-key">More</span><span class="raw-nested-value">+${entries.length - 12} keys</span></div>`
+      : '';
+
+    return `<div class="raw-nested">${rows}${extra}</div>`;
+  }
+
+  function renderSectionRows(sectionData) {
+    if (!sectionData || typeof sectionData !== 'object') {
+      return `<div class="raw-row"><span class="raw-key">Value</span><span class="raw-value">${renderPrimitiveValue(sectionData)}</span></div>`;
+    }
+
+    const entries = Object.entries(sectionData);
+    if (entries.length === 0) {
+      return `<div class="raw-row"><span class="raw-key">Empty</span><span class="raw-value">—</span></div>`;
+    }
+
+    return entries.map(([key, value]) => {
+      let valueHtml;
+      if (isPrimitive(value)) valueHtml = renderPrimitiveValue(value);
+      else if (Array.isArray(value)) valueHtml = renderArrayValue(value);
+      else valueHtml = renderObjectValue(value);
+
+      return `
+        <div class="raw-row">
+          <span class="raw-key">${escapeHtml(humanizeKey(key))}</span>
+          <span class="raw-value">${valueHtml}</span>
+        </div>
+      `;
+    }).join('');
+  }
+
+  function formatRawData(data) {
+    if (!data || typeof data !== 'object') {
+      return '<div class="char-info-empty">No raw data available</div>';
+    }
+
+    const preferredOrder = [
+      'metadata', 'character', 'classes', 'abilities', 'combat', 'actions',
+      'features', 'spellcasting', 'resources', 'social', 'notes', 'rawFields'
+    ];
+
+    const allKeys = Object.keys(data);
+    const orderedKeys = [
+      ...preferredOrder.filter(k => allKeys.includes(k)),
+      ...allKeys.filter(k => !preferredOrder.includes(k))
+    ];
+
+    return orderedKeys.map(sectionKey => `
+      <div class="raw-data-section">
+        <div class="raw-data-title">${escapeHtml(humanizeKey(sectionKey))}</div>
+        <div class="raw-data-grid">
+          ${renderSectionRows(data[sectionKey])}
+        </div>
+      </div>
+    `).join('');
+  }
+
+  function showRawData() {
+    if (!currentCharacterData) {
+      charInfoContent.innerHTML = '<div class="char-info-empty">No character data loaded</div>';
+      return;
+    }
+    charInfoContent.innerHTML = `
+      <div class="char-info-section">
+        <div class="char-info-section-title">Raw Character Data</div>
+        ${formatRawData(currentCharacterData)}
+      </div>
+    `;
+  }
+
+  function showCharacterInfo(data) {
+    // Store current data for raw data mode
+    currentCharacterData = data;
+    isRawDataMode = false;
+    
+    // Show/hide the toggle button based on whether we have data
+    if (toggleRawDataBtn) {
+      toggleRawDataBtn.style.display = (data && data.character) ? 'block' : 'none';
+    }
+    
+    if (!data || !data.character) {
+      // Show completely empty window
+      charInfoContent.innerHTML = `
+        <div class="char-info-section">
+          <div class="char-info-section-title">Character</div>
+          <div class="char-info-row">
+            <span class="char-info-label">Name</span>
+            <span class="char-info-value">---</span>
+          </div>
+          <div class="char-info-row">
+            <span class="char-info-label">Class</span>
+            <span class="char-info-value">---</span>
+          </div>
+          <div class="char-info-row">
+            <span class="char-info-label">Race</span>
+            <span class="char-info-value">---</span>
+          </div>
+          <div class="char-info-row">
+            <span class="char-info-label">Background</span>
+            <span class="char-info-value">---</span>
+          </div>
+        </div>
+
+        <div class="char-info-section">
+          <div class="char-info-section-title">Combat Stats</div>
+          <div class="char-info-row">
+            <span class="char-info-label">AC</span>
+            <span class="char-info-value">---</span>
+          </div>
+          <div class="char-info-row">
+            <span class="char-info-label">HP</span>
+            <span class="char-info-value">---</span>
+          </div>
+          <div class="char-info-row">
+            <span class="char-info-label">Speed</span>
+            <span class="char-info-value">---</span>
+          </div>
+          <div class="char-info-row">
+            <span class="char-info-label">Proficiency</span>
+            <span class="char-info-value">---</span>
+          </div>
+        </div>
+
+        <div class="char-info-section">
+          <div class="char-info-section-title">Ability Scores</div>
+          <div class="char-info-empty">No ability scores loaded</div>
+        </div>
+
+        <div class="char-info-section">
+          <div class="char-info-section-title">Actions (0)</div>
+          <div class="char-info-empty">No actions loaded</div>
+        </div>
+      `;
+      charInfoWindow.classList.add('visible');
+      charInfoVisible = true;
+      return;
+    }
+
+    // Build class/level string from classes array
+    const classString = data.classes && data.classes.length > 0
+      ? data.classes.map(c => `${c.name} Lv.${c.level}`).join(' / ')
+      : '---';
+
+    // Count total actions from all types
+    const totalActions = (data.actions?.weapons?.length || 0) + 
+                         (data.actions?.spellAttacks?.length || 0) + 
+                         (data.actions?.abilities?.length || 0);
+
+    charInfoContent.innerHTML = `
+      <div class="char-info-section">
+        <div class="char-info-section-title">Character</div>
+        <div class="char-info-row">
+          <span class="char-info-label">Name</span>
+          <span class="char-info-value">${data.character?.name || '---'}</span>
+        </div>
+        <div class="char-info-row">
+          <span class="char-info-label">Class</span>
+          <span class="char-info-value">${classString}</span>
+        </div>
+        <div class="char-info-row">
+          <span class="char-info-label">Race</span>
+          <span class="char-info-value">${data.character?.demographics?.race || '---'}</span>
+        </div>
+        <div class="char-info-row">
+          <span class="char-info-label">Background</span>
+          <span class="char-info-value">${data.character?.demographics?.background || '---'}</span>
+        </div>
+      </div>
+
+      <div class="char-info-section">
+        <div class="char-info-section-title">Combat Stats</div>
+        <div class="char-info-row">
+          <span class="char-info-label">AC</span>
+          <span class="char-info-value">${data.combat?.armorClass ? data.combat.armorClass : '---'}</span>
+        </div>
+        <div class="char-info-row">
+          <span class="char-info-label">HP</span>
+          <span class="char-info-value">${data.combat?.hitPoints?.max ? data.combat.hitPoints.max : '---'}</span>
+        </div>
+        <div class="char-info-row">
+          <span class="char-info-label">Speed</span>
+          <span class="char-info-value">${data.combat?.speed ? data.combat.speed + 'ft' : '---'}</span>
+        </div>
+        <div class="char-info-row">
+          <span class="char-info-label">Proficiency</span>
+          <span class="char-info-value">${data.combat?.proficiencyBonus ? '+' + data.combat.proficiencyBonus : '---'}</span>
+        </div>
+      </div>
+
+      <div class="char-info-section">
+        <div class="char-info-section-title">Ability Scores</div>
+        ${generateAbilityScoreRows(data.abilities)}
+      </div>
+
+      <div class="char-info-section">
+        <div class="char-info-section-title">Actions (${totalActions})</div>
+        <div class="char-info-actions-list">
+          ${generateActionsList(data.actions)}
+        </div>
+      </div>
+
+      ${data.spellcasting?.cantrips?.length > 0 ? `
+      <div class="char-info-section">
+        <div class="char-info-section-title">Cantrips (${data.spellcasting.cantrips.length})</div>
+        <div class="char-info-actions-list">
+          ${generateSpellsList(data.spellcasting.cantrips)}
+        </div>
+      </div>
+      ` : ''}
+    `;
+
+    // Show window
+    charInfoWindow.classList.add('visible');
+    charInfoVisible = true;
+  }
+
+  function generateAbilityScoreRows(abilities) {
+    if (!abilities) {
+      return '<div class="char-info-empty">No ability scores loaded</div>';
+    }
+    
+    // Check if all abilities are null/empty
+    const allNull = Object.values(abilities).every(a => a.score === null || a.score === undefined);
+    if (allNull) {
+      return '<div class="char-info-empty">No ability scores loaded</div>';
+    }
+    
+    return Object.entries(abilities)
+      .map(([ability, data]) => {
+        const score = data.score;
+        const modifier = data.modifier;
+        
+        const scoreDisplay = score !== null && score !== undefined && !isNaN(score) ? score : '---';
+        const modDisplay = modifier !== null && modifier !== undefined && !isNaN(modifier) ? (modifier >= 0 ? '+' : '') + modifier : '---';
+        
+        return `
+        <div class="char-info-row">
+          <span class="char-info-label">${ability.charAt(0).toUpperCase() + ability.slice(1)}</span>
+          <span class="char-info-value">${scoreDisplay} (${modDisplay})</span>
+        </div>
+      `;
+      })
+      .join('');
+  }
+
+  function generateActionsList(actionsObj) {
+    if (!actionsObj) {
+      return '<div class="char-info-empty">No actions</div>';
+    }
+    
+    // Combine all action types into a single array
+    const allActions = [
+      ...(actionsObj.weapons || []),
+      ...(actionsObj.spellAttacks || []),
+      ...(actionsObj.abilities || [])
+    ];
+    
+    if (allActions.length === 0) {
+      return '<div class="char-info-empty">No actions</div>';
+    }
+    
+    return allActions.map(action => `
+      <div class="char-info-action-item">
+        <div class="char-info-action-name">${action.name}</div>
+        <div class="char-info-action-detail">
+          ${action.toHit !== undefined ? `To Hit: +${action.toHit} | ` : ''}
+          ${action.damage?.dice ? `Damage: ${action.damage.dice}` : ''}
+          ${action.range ? `Range: ${action.range}` : ''}
+        </div>
+      </div>
+    `).join('');
+  }
+
+  function generateSpellsList(spells) {
+    if (!spells || spells.length === 0) {
+      return '<div class="char-info-empty">No spells</div>';
+    }
+    
+    return spells.map(spell => `
+      <div class="char-info-action-item" style="border-left-color: var(--purple-main);">
+        <div class="char-info-action-name">${spell.name} (Level ${spell.level})</div>
+        <div class="char-info-action-detail">
+          ${spell.school || ''} | ${spell.castingTime || ''}
+        </div>
+      </div>
+    `).join('');
+  }
+
+  function toggleCharacterInfo() {
+    charInfoVisible = !charInfoVisible;
+    if (charInfoVisible) {
+      charInfoWindow.classList.add('visible');
+    } else {
+      charInfoWindow.classList.remove('visible');
+    }
+  }
+
+  // Close character info window
+  if (closeCharInfoBtn) {
+    closeCharInfoBtn.addEventListener('click', toggleCharacterInfo);
+  }
+
+  // Raw data toggle
+  if (toggleRawDataBtn) {
+    toggleRawDataBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      isRawDataMode = !isRawDataMode;
+      if (isRawDataMode) {
+        toggleRawDataBtn.style.backgroundColor = '#3b82f6';
+        toggleRawDataBtn.textContent = 'Summary';
+        showRawData();
+      } else {
+        toggleRawDataBtn.style.backgroundColor = '#1e293b';
+        toggleRawDataBtn.textContent = 'Raw Data';
+        showCharacterInfo(currentCharacterData);
+      }
+    });
+  }
+
+  // Drag functionality for character info window (following log window pattern)
+  const charInfoDragHandle = document.getElementById('char-info-drag-handle');
+  const charInfoResizeHandle = document.getElementById('char-info-resize-handle');
+  let isDraggingCharInfo = false;
+  let isResizingCharInfo = false;
+  let charInfoStartX, charInfoStartY, charInfoStartTop, charInfoStartRight;
+  let charInfoStartHeight;
+
+  if (charInfoDragHandle) {
+    charInfoDragHandle.onmousedown = (e) => {
+      if (e.target.classList.contains('close-btn') || e.target.classList.contains('char-info-btn')) return;
+      isDraggingCharInfo = true;
+      charInfoStartX = e.clientX;
+      charInfoStartY = e.clientY;
+      charInfoStartTop = parseInt(window.getComputedStyle(charInfoWindow).top);
+      charInfoStartRight = parseInt(window.getComputedStyle(charInfoWindow).right);
+      e.preventDefault();
+      e.stopPropagation();
+    };
+  }
+
+  if (charInfoResizeHandle) {
+    charInfoResizeHandle.onmousedown = (e) => {
+      isResizingCharInfo = true;
+      charInfoStartY = e.clientY;
+      charInfoStartHeight = charInfoWindow.offsetHeight;
+      e.preventDefault();
+      e.stopPropagation();
+    };
+  }
+
+  // Add wheel event to character info window for scroll isolation
+  charInfoWindow.addEventListener('wheel', (e) => {
+    e.stopPropagation();
+  }, { passive: false });
+
+  // Prevent text selection during drag/resize
+  window.addEventListener('mousemove', (e) => {
+    if (isDraggingCharInfo || isResizingCharInfo) {
+      document.body.style.userSelect = 'none';
+      document.body.style.cursor = isResizingCharInfo ? 'ns-resize' : 'grabbing';
+    } else {
+      document.body.style.userSelect = '';
+      document.body.style.cursor = '';
+    }
+
+    if (isDraggingCharInfo) {
+      const dx = e.clientX - charInfoStartX;
+      const dy = e.clientY - charInfoStartY;
+      charInfoWindow.style.top = (charInfoStartTop + dy) + 'px';
+      charInfoWindow.style.right = (charInfoStartRight - dx) + 'px';
+    } else if (isResizingCharInfo) {
+      const deltaY = e.clientY - charInfoStartY;
+      const newHeight = charInfoStartHeight + deltaY;
+      charInfoWindow.style.height = Math.max(250, newHeight) + 'px'; // Min height 250px
+    }
+  });
+
+  window.addEventListener('mouseup', () => {
+    isDraggingCharInfo = false;
+    isResizingCharInfo = false;
+    document.body.style.userSelect = '';
+    document.body.style.cursor = '';
+  });
+
+  // PDF/JSON Import Button Handlers
+  const importPdfBtn = document.getElementById('import-pdf');
+  const hiddenFileInput = document.createElement('input');
+  hiddenFileInput.type = 'file';
+  hiddenFileInput.accept = '.pdf,.json';
+  hiddenFileInput.style.display = 'none';
+  document.body.appendChild(hiddenFileInput);
+
+  // Make sure getFromImportedCharacters is available on window.open5eAPI
+  if (!window.open5eAPI.getFromImportedCharacters) {
+    window.open5eAPI.getFromImportedCharacters = function() {
+      try {
+        const json = localStorage.getItem('imported_characters');
+        if (json) {
+          return JSON.parse(json);
+        }
+      } catch (e) {
+        console.warn('Could not load from imported_characters:', e);
+      }
+      return null;
+    };
+  }
+
+  /**
+   * Import character from PDF or JSON file
+   * Parses the file, stores temp data, applies to flowchart, and displays character info
+   */
+  async function handleImportFile(selectedFile) {
+    if (!selectedFile) return;
+
+    try {
+      importPdfBtn.textContent = 'Loading...';
+      let parsedCharacterData;
+      const MAX_PDF_SIZE_MB = 15;
+      const MAX_PDF_PAGES = 20;
+
+      // Parse based on file type
+      if (selectedFile.type === 'application/json' || selectedFile.name.endsWith('.json')) {
+        // Import from JSON
+        const parser = new window.CharacterPDFParser();
+        parsedCharacterData = await parser.importFromJSON(selectedFile);
+        console.log('[Import] JSON character loaded:', parsedCharacterData.character?.name);
+      } else if (selectedFile.type === 'application/pdf' || selectedFile.name.endsWith('.pdf')) {
+        const sizeMB = selectedFile.size / (1024 * 1024);
+        if (sizeMB > MAX_PDF_SIZE_MB) {
+          addLogEntry(`<b>Import blocked:</b> PDF size ${sizeMB.toFixed(2)}MB exceeds ${MAX_PDF_SIZE_MB}MB limit.`, 'normal');
+          importPdfBtn.textContent = '✕ Too Large';
+          setTimeout(() => {
+            importPdfBtn.textContent = 'Import Character';
+          }, 2200);
+          return;
+        }
+
+        // Parse PDF
+        const pdfParser = new window.CharacterPDFParser();
+        parsedCharacterData = await pdfParser.parsePDF(URL.createObjectURL(selectedFile), { maxPages: MAX_PDF_PAGES });
+        pdfParser.exportToJSON(parsedCharacterData);
+        console.log('[Import] PDF parsed:', parsedCharacterData.character?.name);
+
+        if (parsedCharacterData?.metadata?.pageLimitExceeded) {
+          const processed = parsedCharacterData.metadata.processedPages || MAX_PDF_PAGES;
+          const total = parsedCharacterData.metadata.sourceTotalPages || 'unknown';
+          addLogEntry(`<b>PDF page limit applied:</b> Processed first ${processed} of ${total} pages.`, 'normal');
+        }
+      } else {
+        throw new Error('Unsupported file type. Please use PDF or JSON.');
+      }
+
+      // Validate parsed data
+      if (!parsedCharacterData?.character || !parsedCharacterData?.combat) {
+        throw new Error('Invalid character data format');
+      }
+
+      // Store in character loader
+      window.characterLoader.characterData = parsedCharacterData;
+
+      // Apply character to flowchart
+      window.characterLoader.applyToFlowchart();
+
+      // Enrich actions with external data (if available)
+      if (parsedCharacterData.actions) {
+        const allActions = [
+          ...(parsedCharacterData.actions.weapons || []),
+          ...(parsedCharacterData.actions.spellAttacks || []),
+          ...(parsedCharacterData.actions.abilities || [])
+        ];
+        
+        for (const action of allActions) {
+          try {
+            const enrichedAction = await window.open5eAPI.enrichAction(action);
+            Object.assign(action, enrichedAction);
+          } catch (e) {
+            console.warn('[Import] Could not enrich action:', e);
+          }
+        }
+      }
+
+      // Update external links
+      window.externalLinkManager.injectLinksIntoCards();
+
+      // Display character info
+      showCharacterInfo(parsedCharacterData);
+
+      // Log what was imported
+      const classString = parsedCharacterData.classes?.length > 0
+        ? parsedCharacterData.classes.map(c => `${c.name} Lv.${c.level}`).join(' / ')
+        : 'Unknown';
+      
+      console.log('[Import] Parsed data:');
+      console.log('  Character:', {
+        name: parsedCharacterData.character?.name,
+        class: classString,
+        race: parsedCharacterData.character?.demographics?.race,
+        background: parsedCharacterData.character?.demographics?.background
+      });
+      console.log('  Combat:', {
+        ac: parsedCharacterData.combat?.armorClass,
+        hp: parsedCharacterData.combat?.hitPoints?.max,
+        speed: parsedCharacterData.combat?.speed,
+        profBonus: parsedCharacterData.combat?.proficiencyBonus
+      });
+      console.log('  Abilities:', parsedCharacterData.abilities);
+
+      // Update button feedback
+      importPdfBtn.textContent = '✓ Imported';
+      setTimeout(() => {
+        importPdfBtn.textContent = 'Import Character';
+      }, 2500);
+
+      console.log('[Import] Character import complete:', parsedCharacterData.character);
+
+    } catch (error) {
+      console.error('[Import] Error:', error);
+      importPdfBtn.textContent = '✕ Error';
+      setTimeout(() => {
+        importPdfBtn.textContent = 'Import Character';
+      }, 2000);
+      alert('Error importing file: ' + error.message);
+    }
+  }
+
+  // Click to select file
+  importPdfBtn.addEventListener('click', () => {
+    hiddenFileInput.click();
+  });
+
+  // File input change handler
+  hiddenFileInput.addEventListener('change', (event) => {
+    const selectedFile = event.target.files[0];
+    if (selectedFile) {
+      handleImportFile(selectedFile);
+    }
+    // Reset so same file can be selected again
+    hiddenFileInput.value = '';
+  });
+
+  // Drag and drop handlers
+  importPdfBtn.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    importPdfBtn.classList.add('drag-over');
+  });
+
+  importPdfBtn.addEventListener('dragleave', () => {
+    importPdfBtn.classList.remove('drag-over');
+  });
+
+  importPdfBtn.addEventListener('drop', (e) => {
+    e.preventDefault();
+    importPdfBtn.classList.remove('drag-over');
+    
+    const file = e.dataTransfer.files[0];
+    if (file) {
+      handleImportFile(file);
+    }
+  });
+
+  // Also allow drag-drop on entire footer for better UX
+  const footer = document.querySelector('footer');
+  footer.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    importPdfBtn.classList.add('drag-over');
+  });
+
+  footer.addEventListener('dragleave', (e) => {
+    // Only remove if leaving the footer entirely
+    const rect = footer.getBoundingClientRect();
+    if (e.clientX < rect.left || e.clientX > rect.right || 
+        e.clientY < rect.top || e.clientY > rect.bottom) {
+      importPdfBtn.classList.remove('drag-over');
+    }
+  });
+
+  footer.addEventListener('drop', (e) => {
+    e.preventDefault();
+    importPdfBtn.classList.remove('drag-over');
+    
+    const file = e.dataTransfer.files[0];
+    if (file && (file.type === 'application/pdf' || file.name.endsWith('.pdf') ||
+                 file.type === 'application/json' || file.name.endsWith('.json'))) {
+      handleImportFile(file);
+    }
+  });
+</script>
+
+<script>
+  (function() {
+    const mask = document.getElementById('canvas-mask');
+    const world = document.getElementById('world');
+    const svg = document.getElementById('connection-layer');
+    const logContent = document.getElementById('log-content');
+    const logWindow = document.getElementById('log-window');
+    const logDragHandle = document.getElementById('log-drag-handle');
+    const logResizeHandle = document.getElementById('log-resize-handle');
+    const logCountBadge = document.getElementById('log-count');
+    const clearBtn = document.getElementById('clear-log-btn');
+    const undoBtn = document.getElementById('undo-log-btn');
+    const cardStack = document.getElementById('card-stack');
+    
+    // New folder system elements
+    const cards = Array.from(document.querySelectorAll('.stack-card'));
+    const activeLabelText = document.getElementById('active-label');
+    const globalToggle = document.getElementById('global-toggle');
+    const sidePanel = document.getElementById('side-panel');
+    const rollOverlay = document.getElementById('roll-display-overlay');
+    const rollTypeLabel = document.getElementById('roll-type-label');
+    const rollTotalVal = document.getElementById('roll-total-val');
+    const rollMathVal = document.getElementById('roll-math-val');
+    
+    const nodes = {
+      primary: { el: document.getElementById('primary'), children: ['melee', 'magic'] },
+      melee: { el: document.getElementById('melee'), children: ['unarmed', 'weapon'] },
+      magic: { el: document.getElementById('magic'), children: [] },
+      unarmed: { el: document.getElementById('unarmed'), children: ['card-stack'] },
+      weapon: { el: document.getElementById('weapon'), children: [] },
+      'card-stack': { el: cardStack, children: [], linked: true }
+    };
+
+    const cardData = {
+      damage_type: "bludgeoning"
+    };
+
+    let panX = 0, panY = 0;
+    let scale = 1.0;
+    let editMode = false;
+    const ZOOM_LEVELS = [0.5, 1.0, 1.5];
+    let currentZoomIndex = 1;
+
+    let isPanning = false;
+    let isDraggingNode = null;
+    let lastTouchX = 0;
+    let lastTouchY = 0;
+
+    let isDraggingLog = false;
+    let isResizingLog = false;
+    let logStartX, logStartY, logStartRight, logStartBottom, logStartHeight;
+
+    // New folder system variables
+    let order = [0, 1, 2];
+    let visibleStates = { 0: true, 1: true, 2: true };
+    let rollTimeout;
+    let hitBoxLongPress = false;
+    let dmgBoxLongPress = false;
+
+    // Track offset between unarmed button and card-stack
+    let unarmedStackOffsetX = 0;
+    let unarmedStackOffsetY = 0;
+
+    // Side panel drag variables
+    let isDraggingPanel = false;
+    let panelDragStartX = 0;
+    let panelDragStartY = 0;
+    let panelCurrentPos = 'bottom'; // 'left', 'right', 'bottom'
+    const PANEL_SNAP_THRESHOLD = 50; // pixels past edge to trigger snap
+
+    logDragHandle.onmousedown = (e) => {
+      if (e.target.classList.contains('close-btn') || e.target.classList.contains('log-btn')) return;
+      isDraggingLog = true;
+      logStartX = e.clientX; logStartY = e.clientY;
+      logStartRight = parseInt(window.getComputedStyle(logWindow).right);
+      logStartBottom = parseInt(window.getComputedStyle(logWindow).bottom);
+      e.preventDefault();
+    };
+
+    logResizeHandle.onmousedown = (e) => {
+      isResizingLog = true;
+      logStartY = e.clientY; logStartHeight = logWindow.offsetHeight;
+      logStartBottom = parseInt(window.getComputedStyle(logWindow).bottom);
+      e.preventDefault(); e.stopPropagation();
+    };
+
+    logWindow.addEventListener('wheel', (e) => { e.stopPropagation(); }, { passive: false });
+
+    // Side panel drag handling
+    const panelHeader = document.querySelector('.panel-header');
+    let panelClickTimeout;
+    let panelDragged = false;
+    
+    if (panelHeader) {
+      panelHeader.onmousedown = (e) => {
+        if (e.target.closest('.close-btn') || e.target.closest('.log-btn')) return;
+        
+        panelDragged = false;
+        
+        // In bottom position, distinguish between click (collapse) and drag (reposition)
+        if (panelCurrentPos === 'bottom') {
+          panelClickTimeout = setTimeout(() => {
+            // After delay, treat as drag
+            isDraggingPanel = true;
+            panelDragStartX = e.clientX;
+            panelDragStartY = e.clientY;
+          }, 100);
+        } else {
+          // In left/right positions, allow dragging
+          isDraggingPanel = true;
+          panelDragStartX = e.clientX;
+          panelDragStartY = e.clientY;
+        }
+        e.preventDefault();
+      };
+      
+      panelHeader.onmouseup = () => {
+        if (panelClickTimeout) {
+          clearTimeout(panelClickTimeout);
+        }
+        // If not dragged, it's a click - toggle collapsed state (bottom position only)
+        if (!panelDragged && panelCurrentPos === 'bottom') {
+          sidePanel.classList.toggle('collapsed');
+          // Add class to card-stack for seamless border styling
+          cardStack.classList.toggle('panel-collapsed', sidePanel.classList.contains('collapsed'));
+        }
+      };
+    }
+
+    let logEntriesCount = 0;
+    let logBackup = null;
+
+    function updateBadge() {
+        if (logEntriesCount > 0) {
+            logCountBadge.innerText = logEntriesCount;
+            logCountBadge.classList.remove('hidden');
+        } else {
+            logCountBadge.classList.add('hidden');
+        }
+    }
+
+    function addLogEntry(msg, type = 'normal') {
+      if (logEntriesCount === 0) logContent.innerHTML = '';
+      logEntriesCount++;
+      updateBadge();
+      const entry = document.createElement('div');
+      entry.className = `log-entry ${type}`;
+      const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      entry.innerHTML = `<small style="opacity: 0.6; display: block;">${time}</small> ${msg}`;
+      logContent.prepend(entry);
+      logBackup = null; undoBtn.disabled = true;
+    }
+
+    clearBtn.onclick = () => {
+        if (logEntriesCount === 0) return;
+        logBackup = { html: logContent.innerHTML, count: logEntriesCount };
+        logContent.innerHTML = '<div style="text-align: center; color: #94a3b8; font-size: 12px; margin-top: 20px;">No actions recorded yet.</div>';
+        logEntriesCount = 0;
+        updateBadge(); undoBtn.disabled = false;
+    };
+
+    undoBtn.onclick = () => {
+        if (!logBackup) return;
+        logContent.innerHTML = logBackup.html;
+        logEntriesCount = logBackup.count;
+        updateBadge(); logBackup = null; undoBtn.disabled = true;
+    };
+
+    function rollHit() {
+      const d20 = Math.floor(Math.random() * 20) + 1;
+      const total = d20 + 7;
+      const hitMsg = `<b>Attack Roll:</b> ${d20} + 7 = <b>${total}</b>`;
+      addLogEntry(hitMsg, 'hit');
+    }
+
+    function applyDmg() {
+      const dmgVal = 3; // Fixed for now
+      let msg = `<b>Damage Applied:</b> ${dmgVal} points of <b>${cardData.damage_type}</b> damage dealt.`;
+      addLogEntry(msg, 'damage');
+    }
+
+    // New roll system
+    function rollD20(modifier, type = "Hit") {
+      const roll = Math.floor(Math.random() * 20) + 1;
+      const total = roll + modifier;
+      
+      rollTypeLabel.innerText = `${type} Roll`;
+      rollTotalVal.innerText = total;
+      rollMathVal.innerText = `${roll} + (${modifier >= 0 ? '+' : ''}${modifier})`;
+      
+      rollOverlay.classList.remove('show');
+      void rollOverlay.offsetWidth; 
+      rollOverlay.classList.add('show');
+
+      clearTimeout(rollTimeout);
+      rollTimeout = setTimeout(() => {
+        rollOverlay.classList.remove('show');
+      }, 3000);
+    }
+
+    function drawLines() {
+      const defs = svg.querySelector('defs').outerHTML;
+      svg.innerHTML = defs;
+      Object.keys(nodes).forEach(key => {
+        const parent = nodes[key];
+        if (parent.el.classList.contains('hidden')) return;
+        parent.children.forEach(childKey => {
+          const child = nodes[childKey];
+          if (child.el.classList.contains('hidden')) return;
+          const p = parent.el; const c = child.el;
+          const x1 = p.offsetLeft + p.offsetWidth / 2;
+          const y1 = p.offsetTop + p.offsetHeight;
+          const x2 = c.offsetLeft + c.offsetWidth / 2;
+          const y2 = c.offsetTop;
+          if (child.linked) {
+            c.style.left = (p.offsetLeft + p.offsetWidth/2 - c.offsetWidth/2) + 'px';
+            const length = y2 - y1; const offset = length * 0.25;
+            const extension = document.createElementNS("http://www.w3.org/2000/svg", "line");
+            extension.setAttribute("x1", x1); extension.setAttribute("y1", y1 - p.offsetHeight/2); 
+            extension.setAttribute("x2", x1); extension.setAttribute("y2", y1 + offset); 
+            extension.setAttribute("stroke", "black"); extension.setAttribute("stroke-width", "10"); 
+            svg.appendChild(extension);
+            const arrowLine = document.createElementNS("http://www.w3.org/2000/svg", "line");
+            arrowLine.setAttribute("x1", x1); arrowLine.setAttribute("y1", y1 + offset); 
+            arrowLine.setAttribute("x2", x1); arrowLine.setAttribute("y2", y2 + offset); 
+            arrowLine.setAttribute("stroke", "black"); arrowLine.setAttribute("stroke-width", "10"); 
+            arrowLine.setAttribute("marker-end", "url(#large-arrow-black)");
+            svg.appendChild(arrowLine);
+          } else {
+            const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+            const midY = y1 + (y2 - y1) / 2;
+            const d = `M ${x1} ${y1} L ${x1} ${midY} L ${x2} ${midY} L ${x2} ${y2}`;
+            path.setAttribute("d", d); path.setAttribute("stroke", "#94a3b8"); 
+            path.setAttribute("stroke-width", "3"); path.setAttribute("fill", "none"); 
+            path.setAttribute("marker-end", "url(#arrow)");
+            svg.appendChild(path);
+          }
+        });
+      });
+    }
+
+    function applyTransform() {
+      world.style.transform = `translate(${panX}px, ${panY}px) scale(${scale})`;
+      mask.style.backgroundPosition = `${panX}px ${panY}px`;
+      mask.style.backgroundSize = `${40 * scale}px ${40 * scale}px`;
+      drawLines();
+    }
+
+    function centerPrimaryNode() {
+      const primaryNode = nodes.primary.el;
+      scale = 1.0; currentZoomIndex = 1;
+      panX = -(primaryNode.offsetLeft - mask.offsetWidth / 2 + primaryNode.offsetWidth / 2);
+      panY = -(primaryNode.offsetTop - 100);
+      applyTransform();
+    }
+
+    // New folder system functions
+    function setupSteppedScroll(boxId, scrollId, defaultIndex, maxIndex, valuesArray) {
+      const box = document.getElementById(boxId);
+      const scroll = document.getElementById(scrollId);
+      if (!box || !scroll) return;
+
+      // Each scroll box needs its own isolated index variable
+      let index = defaultIndex;
+      const itemHeight = 44;
+      let longPressTimer;
+      let isLongPress = false;
+
+      const update = () => {
+        const offset = index * itemHeight;
+        scroll.style.transform = `translateY(-${offset}px)`;
+        if (index !== defaultIndex) box.classList.add('modified');
+        else box.classList.remove('modified');
+      };
+
+      update();
+
+      const startHold = () => {
+        isLongPress = false;
+        if (boxId === 'hit-box') hitBoxLongPress = false;
+        if (boxId === 'dmg-box') dmgBoxLongPress = false;
+        box.classList.add('pressing');
+        longPressTimer = setTimeout(() => {
+          isLongPress = true;
+          if (boxId === 'hit-box') hitBoxLongPress = true;
+          if (boxId === 'dmg-box') dmgBoxLongPress = true;
+          index = defaultIndex;
+          update();
+          box.classList.remove('pressing');
+        }, 1500);
+      };
+
+      const endHold = () => {
+        clearTimeout(longPressTimer);
+        box.classList.remove('pressing');
+        if (boxId === 'hit-box') {
+          setTimeout(() => {
+            hitBoxLongPress = false;
+          }, 50); // Small delay to ensure click event happens after this
+        }
+        if (boxId === 'dmg-box') {
+          setTimeout(() => {
+            dmgBoxLongPress = false;
+          }, 50); // Small delay to ensure click event happens after this
+        }
+      };
+
+      // Mouse events
+      box.addEventListener('mousedown', startHold);
+      window.addEventListener('mouseup', endHold);
+
+      // Touch events
+      box.addEventListener('touchstart', (e) => {
+        startHold();
+      }, { passive: true });
+      box.addEventListener('touchend', endHold);
+
+      box.addEventListener('click', (e) => {
+        if (isLongPress) {
+          isLongPress = false;
+          return;
+        }
+        if (boxId === 'rng-box') {
+          // Range change - no log output
+        } else if (boxId === 'hit-box') {
+          // Don't handle roll here - let the main card handler do it
+          // But prevent event bubbling
+          e.stopPropagation();
+        } else if (boxId === 'dmg-box') {
+          // Don't handle roll here - let the main card handler do it
+          // But prevent event bubbling
+          e.stopPropagation();
+        }
+      });
+
+      box.addEventListener('wheel', (e) => {
+        e.preventDefault();
+        if (e.deltaY > 0 && index > 0) index--;
+        else if (e.deltaY < 0 && index < maxIndex) index++;
+        update();
+      }, { passive: false });
+
+      let touchStartY = 0;
+      box.addEventListener('touchstart', (e) => { touchStartY = e.touches[0].clientY; });
+      box.addEventListener('touchmove', (e) => {
+        const touchEndY = e.touches[0].clientY;
+        const diff = touchStartY - touchEndY;
+        if (Math.abs(diff) > 25) {
+          e.preventDefault(); 
+          clearTimeout(longPressTimer);
+          box.classList.remove('pressing');
+          if (diff < 0 && index > 0) { index--; touchStartY = touchEndY; }
+          else if (diff > 0 && index < maxIndex) { index++; touchStartY = touchEndY; }
+          update();
+        }
+      }, { passive: false });
+    }
+
+    function updatePositions() {
+      const activeInStack = order.filter(idx => visibleStates[idx]);
+      const visibleCount = activeInStack.length;
+      const baseOffset = 35;
+      const stackOffset = visibleCount > 0 ? (visibleCount - 1) * baseOffset : 0;
+      
+      document.documentElement.style.setProperty(
+        '--folder-dynamic-height', 
+        `calc(var(--card-height) + ${stackOffset}px + (var(--folder-offset) * 2))`
+      );
+
+      cards.forEach((card, idx) => {
+        card.classList.remove('at-pos-1', 'at-pos-2', 'at-pos-3', 'hidden');
+        const stackPos = activeInStack.indexOf(idx);
+        if (!visibleStates[idx]) card.classList.add('hidden');
+        else if (stackPos !== -1) card.classList.add(`at-pos-${stackPos + 1}`);
+      });
+
+      // Folder header label remains fixed - does not change based on active card
+    }
+
+    function handleCardToggle(cardIndex, toggleEl) {
+      event.stopPropagation();
+      toggleEl.classList.toggle('active');
+      visibleStates[cardIndex] = toggleEl.classList.contains('active');
+      if (!visibleStates[cardIndex]) {
+        const pos = order.indexOf(cardIndex);
+        order.splice(pos, 1);
+        order.push(cardIndex);
+      }
+      updatePositions();
+    }
+
+    // Make handleCardToggle globally accessible for inline onclick handlers
+    window.handleCardToggle = handleCardToggle;
+
+    mask.addEventListener('wheel', (e) => {
+      // Check if cursor is over a scrollable stat box
+      const elementUnderCursor = document.elementFromPoint(e.clientX, e.clientY);
+      const isOverScrollableBox = elementUnderCursor && 
+        (elementUnderCursor.classList.contains('stat-box') && 
+         elementUnderCursor.querySelector('.scroll-container'));
+      
+      // If over scrollable box, don't handle canvas zoom
+      if (isOverScrollableBox) {
+        return;
+      }
+      
+      e.preventDefault();
+      const rect = mask.getBoundingClientRect();
+      const mouseX = e.clientX - rect.left; const mouseY = e.clientY - rect.top;
+      const worldX = (mouseX - panX) / scale; const worldY = (mouseY - panY) / scale;
+      if (e.deltaY < 0) { if (currentZoomIndex < ZOOM_LEVELS.length - 1) currentZoomIndex++; } 
+      else { if (currentZoomIndex > 0) currentZoomIndex--; }
+      scale = ZOOM_LEVELS[currentZoomIndex];
+      panX = mouseX - worldX * scale; panY = mouseY - worldY * scale;
+      applyTransform();
+    }, { passive: false });
+
+    mask.onmousedown = (e) => {
+      const target = e.target.closest('.node');
+      if (editMode && target && target.classList.contains('node')) {
+        isDraggingNode = target;
+        // Calculate offset between unarmed button and card-stack when starting drag
+        if (target === nodes.unarmed.el) {
+          const cardStackEl = nodes['card-stack'].el;
+          const targetRect = target.getBoundingClientRect();
+          const stackRect = cardStackEl.getBoundingClientRect();
+          // Store offset - use world coordinates for vertical to avoid screen transform issues
+          unarmedStackOffsetX = (stackRect.left - targetRect.left) / scale;
+          unarmedStackOffsetY = cardStackEl.offsetTop - target.offsetTop;
+        }
+      }
+      else { isPanning = true; }
+      lastTouchX = e.clientX; lastTouchY = e.clientY;
+    };
+
+    window.onmousemove = (e) => {
+      if (isDraggingLog) {
+        const dx = e.clientX - logStartX; const dy = e.clientY - logStartY;
+        logWindow.style.right = (logStartRight - dx) + 'px';
+        logWindow.style.bottom = (logStartBottom - dy) + 'px';
+        return;
+      }
+      if (isResizingLog) {
+        const dy = e.clientY - logStartY; const newHeight = logStartHeight + dy; const newBottom = logStartBottom - dy;
+        if (newHeight > 150) { logWindow.style.height = newHeight + 'px'; logWindow.style.bottom = newBottom + 'px'; }
+        return;
+      }
+      if (isDraggingPanel) {
+        panelDragged = true; // Mark as dragged to prevent click trigger
+        const deltaX = e.clientX - panelDragStartX;
+        const deltaY = e.clientY - panelDragStartY;
+
+        // Get card-stack bounding box for snap zone calculation
+        const cardStackEl = nodes['card-stack'].el;
+        const stackRect = cardStackEl.getBoundingClientRect();
+        
+        // Determine new position based on cursor location relative to card-stack
+        let newPos = panelCurrentPos;
+        
+        // Check if cursor is far enough past edges to trigger snap
+        const leftThreshold = stackRect.left - PANEL_SNAP_THRESHOLD;
+        const rightThreshold = stackRect.right + PANEL_SNAP_THRESHOLD;
+        const bottomThreshold = stackRect.bottom + PANEL_SNAP_THRESHOLD;
+        
+        if (e.clientX < leftThreshold) {
+          newPos = 'left';
+        } else if (e.clientX > rightThreshold) {
+          newPos = 'right';
+        } else if (e.clientY > bottomThreshold && e.clientX > stackRect.left && e.clientX < stackRect.right) {
+          newPos = 'bottom';
+        }
+        
+        // Update panel position if changed
+        if (newPos !== panelCurrentPos) {
+          sidePanel.classList.remove('pos-left', 'pos-right', 'pos-bottom');
+          sidePanel.classList.add('pos-' + newPos);
+
+          // Auto-expand when moving to left/right from bottom
+          if (newPos === 'left' || newPos === 'right') {
+            sidePanel.classList.remove('collapsed');
+            cardStack.classList.remove('panel-collapsed');
+          }
+          // When moving to bottom, maintain current expanded/collapsed state
+
+          panelCurrentPos = newPos;
+        }
+        return;
+      }
+      if (isDraggingNode) {
+        const dx = (e.clientX - lastTouchX) / scale; const dy = (e.clientY - lastTouchY) / scale;
+        isDraggingNode.style.left = (isDraggingNode.offsetLeft + dx) + 'px';
+        isDraggingNode.style.top = (isDraggingNode.offsetTop + dy) + 'px';
+
+        // If dragging the unarmed button, move card-stack to maintain relative position
+        if (isDraggingNode === nodes.unarmed.el) {
+          const cardStackEl = nodes['card-stack'].el;
+
+          // Account for margin-top in positioning
+          const cardStackStyles = window.getComputedStyle(cardStackEl);
+          const marginTop = parseInt(cardStackStyles.marginTop) || 0;
+          const adjustedY = (isDraggingNode.offsetTop + unarmedStackOffsetY - marginTop);
+
+          cardStackEl.style.left = (isDraggingNode.offsetLeft + unarmedStackOffsetX) + 'px';
+          cardStackEl.style.top = adjustedY + 'px';
+        }
+
+        lastTouchX = e.clientX; lastTouchY = e.clientY;
+        drawLines();
+      } else if (isPanning) {
+        panX += (e.clientX - lastTouchX); panY += (e.clientY - lastTouchY);
+        lastTouchX = e.clientX; lastTouchY = e.clientY;
+        applyTransform();
+      }
+    };
+
+    window.onmouseup = () => {
+      isPanning = false;
+      isDraggingNode = null;
+      isDraggingLog = false;
+      isResizingLog = false;
+      isDraggingPanel = false;
+      panelDragged = false;
+    };
+
+    // Divine Strike toggle (removed - now handled by folder system)
+    
+    // Action squares toggle
+    document.getElementById('square-1').onclick = (e) => {
+      e.stopPropagation();
+      document.getElementById('square-1').classList.toggle('active');
+    };
+
+    document.getElementById('square-2').onclick = (e) => {
+      e.stopPropagation();
+      document.getElementById('square-2').classList.toggle('active');
+    };
+
+    document.getElementById('square-3').onclick = (e) => {
+      e.stopPropagation();
+      document.getElementById('square-3').classList.toggle('active');
+    };
+
+    // New folder system event handlers
+    globalToggle.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const isActive = globalToggle.classList.toggle('active');
+      sidePanel.classList.toggle('show');
+
+      // Toggle collapsed state when in bottom position
+      if (sidePanel.classList.contains('pos-bottom')) {
+        sidePanel.classList.toggle('collapsed');
+        cardStack.classList.toggle('panel-collapsed', sidePanel.classList.contains('collapsed'));
+      }
+    });
+
+    cards.forEach((card, index) => {
+      const footer = card.querySelector('.card-footer');
+      footer.addEventListener('click', (e) => {
+        const activeInStack = order.filter(idx => visibleStates[idx]);
+        if (visibleStates[index] && activeInStack.indexOf(index) !== 0) {
+          card.classList.add('swapping');
+          setTimeout(() => {
+            const orderIdx = order.indexOf(index);
+            const clickedCardIdx = order.splice(orderIdx, 1)[0];
+            order.unshift(clickedCardIdx);
+            card.classList.remove('swapping');
+            updatePositions();
+          }, 300);
+        }
+      });
+
+      // Add click handlers for stat boxes
+      const statBoxes = card.querySelectorAll('.stat-box');
+      const primaryActionSquare = document.getElementById('square-1');
+
+      statBoxes.forEach((box, boxIndex) => {
+        box.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const statLabel = box.parentElement.querySelector('.stat-label').innerText;
+          const statValue = box.innerText;
+          
+          if (statLabel === 'TO HIT') {
+            // Check if this was a long press reset
+            if (hitBoxLongPress) {
+              hitBoxLongPress = false;
+              return;
+            }
+
+            const primaryActionSquare = document.getElementById('square-1');
+            const parentCard = box.closest('.card');
+            const isGreenCard = parentCard && parentCard.classList.contains('card-green');
+
+            // Check if TO HIT is unavailable (Track Actions ON + Primary Action already used)
+            // Only applies to green card (Unarmed Attack)
+            if (trackActionsEnabled && isGreenCard && primaryActionSquare.classList.contains('active')) {
+              // Button is unavailable - show red background, no log output
+              box.classList.add('unavailable');
+              box.classList.add('pressing');
+              setTimeout(() => box.classList.remove('pressing'), 150);
+              return;
+            }
+
+            // Turn ON primary action square (TO HIT spends primary action)
+            // Only if Track Actions is enabled
+            if (trackActionsEnabled) {
+              primaryActionSquare.classList.add('active');
+            }
+
+            // Get current value from scroll container
+            const scrollContainer = box.querySelector('.scroll-container');
+            const currentScrollIndex = Math.abs(parseInt(scrollContainer.style.transform.replace('translateY(-', '').replace('px)', '')) || 0) / 44;
+            const hitValues = [];
+            for (let i = 30; i >= -10; i--) {
+              hitValues.push((i >= 0 ? '+' : '') + i);
+            }
+            const currentValue = hitValues[currentScrollIndex] || '+7';
+            const modifier = parseInt(currentValue.replace('+', ''));
+
+            // Get card color for log entry
+            let cardColor = 'var(--primary-color)';
+            if (parentCard) {
+              if (parentCard.classList.contains('card-green')) {
+                cardColor = 'var(--secondary-color)';
+              } else if (parentCard.classList.contains('card-yellow')) {
+                cardColor = 'var(--yellow-main)';
+              } else if (parentCard.classList.contains('card-purple')) {
+                cardColor = 'var(--purple-main)';
+              }
+            }
+
+            rollD20(modifier, 'Hit');
+            const attackRollMsg = `<b style="color: ${cardColor};">Attack Roll:</b> 1d20${currentValue} = <b>${modifier + Math.floor(Math.random() * 20) + 1}</b>`;
+
+            // Log action usage if Track Actions is enabled
+            if (trackActionsEnabled) {
+              addLogEntry(`${attackRollMsg}<br><small style="opacity: 0.8; display: block; margin-top: 2px; font-size: 12px;">(1) <b style="color: var(--primary-color);">Action</b> Used</small>`);
+            } else {
+              addLogEntry(attackRollMsg);
+            }
+          } else if (statLabel === 'DMG') {
+            // Check if this was a long press reset
+            if (dmgBoxLongPress) {
+              dmgBoxLongPress = false;
+              return;
+            }
+
+            // Get current value from scroll container
+            const scrollContainer = box.querySelector('.scroll-container');
+            const currentScrollIndex = Math.abs(parseInt(scrollContainer.style.transform.replace('translateY(-', '').replace('px)', '')) || 0) / 44;
+            const dmgValues = [];
+            for (let i = 20; i >= 1; i--) {
+              dmgValues.push(String(i));
+            }
+            const currentValue = dmgValues[currentScrollIndex] || '3';
+
+            // Get card color for log entry
+            const parentCard = box.closest('.card');
+            let cardColor = 'var(--primary-color)';
+            if (parentCard) {
+              if (parentCard.classList.contains('card-green')) {
+                cardColor = 'var(--secondary-color)';
+              } else if (parentCard.classList.contains('card-yellow')) {
+                cardColor = 'var(--yellow-main)';
+              } else if (parentCard.classList.contains('card-purple')) {
+                cardColor = 'var(--purple-main)';
+              }
+            }
+
+            // Show roll overlay with damage value and type
+            rollTypeLabel.innerText = "Bludgeoning Damage";
+            rollTotalVal.innerText = currentValue;
+            rollMathVal.innerText = "bludgeoning";
+
+            rollOverlay.classList.remove('show');
+            void rollOverlay.offsetWidth;
+            rollOverlay.classList.add('show');
+
+            clearTimeout(rollTimeout);
+            rollTimeout = setTimeout(() => {
+              rollOverlay.classList.remove('show');
+            }, 3000);
+
+            addLogEntry(`<b style="color: ${cardColor};">Damage Applied:</b> ${currentValue} points of <b>bludgeoning</b> damage dealt.`);
+          } else if (statLabel === 'RAD') {
+            const modifier = parseInt(statValue.replace('+', ''));
+            rollD20(modifier, 'Divine');
+            addLogEntry(`<b>Divine Strike Roll:</b> ${modifier >= 0 ? '+' : ''}${modifier} modifier`);
+          } else if (statLabel === 'SAVE') {
+            addLogEntry(`<b>Save DC:</b> ${statValue}`);
+          } else if (statLabel === 'NEC') {
+            addLogEntry(`<b>Necrotic Damage:</b> ${statValue}`);
+          }
+        });
+      });
+    });
+
+    // TO HIT hover pulse for primary action
+    const hitBox = document.getElementById('hit-box');
+    const primaryActionSquare = document.getElementById('square-1');
+
+    if (hitBox && primaryActionSquare) {
+      hitBox.addEventListener('mouseenter', () => {
+        const parentCard = hitBox.closest('.card');
+        const isGreenCard = parentCard && parentCard.classList.contains('card-green');
+
+        // Check if unavailable (Track Actions ON + Primary Action used + Green card)
+        if (trackActionsEnabled && isGreenCard && primaryActionSquare.classList.contains('active')) {
+          hitBox.classList.add('unavailable');
+          return;
+        }
+
+        // Only pulse if Track Actions is enabled AND primary action is NOT active
+        if (trackActionsEnabled && !primaryActionSquare.classList.contains('active')) {
+          primaryActionSquare.classList.add('pulse-indicator');
+        }
+      });
+
+      hitBox.addEventListener('mouseleave', () => {
+        hitBox.classList.remove('unavailable');
+        primaryActionSquare.classList.remove('pulse-indicator');
+      });
+
+      hitBox.addEventListener('click', () => {
+        // Stop pulse when TO HIT is clicked
+        primaryActionSquare.classList.remove('pulse-indicator');
+      });
+
+      // Listen for primary action toggle to update unavailable state
+      primaryActionSquare.addEventListener('click', () => {
+        const parentCard = hitBox.closest('.card');
+        const isGreenCard = parentCard && parentCard.classList.contains('card-green');
+
+        // Update unavailable state after a short delay (after click toggles the class)
+        setTimeout(() => {
+          if (trackActionsEnabled && isGreenCard && primaryActionSquare.classList.contains('active')) {
+            hitBox.classList.add('unavailable');
+          } else {
+            hitBox.classList.remove('unavailable');
+          }
+        }, 50);
+      });
+    }
+
+    function setNodeVisibility(nodeKey, isVisible) {
+      const node = nodes[nodeKey]; if (!node) return;
+      if (isVisible) node.el.classList.remove('hidden');
+      else { node.el.classList.add('hidden'); node.children.forEach(childKey => setNodeVisibility(childKey, false)); }
+    }
+
+    function toggleChildren(parentKey) {
+      const parent = nodes[parentKey]; if (!parent || parent.children.length === 0) return;
+      const newState = nodes[parent.children[0]].el.classList.contains('hidden');
+      parent.children.forEach(childKey => setNodeVisibility(childKey, newState));
+      drawLines();
+    }
+
+    nodes.primary.el.onclick = () => { if(!editMode) toggleChildren('primary'); };
+    nodes.melee.el.onclick = () => { if(!editMode) toggleChildren('melee'); };
+    nodes.unarmed.el.onclick = () => { if(!editMode) toggleChildren('unarmed'); };
+
+    // RESET/UNDO button functionality
+    const resetPositionsBtn = document.getElementById('reset-positions');
+    let originalPositions = {};
+    let preResetPositions = {}; // Store positions before reset
+    let hasResetPositions = false;
+
+    // Store original positions when page loads
+    function storeOriginalPositions() {
+      Object.keys(nodes).forEach(key => {
+        const node = nodes[key];
+        if (node.el) {
+          originalPositions[key] = {
+            left: node.el.style.left,
+            top: node.el.style.top
+          };
+        }
+      });
+    }
+
+    // Store current positions before reset
+    function storePreResetPositions() {
+      Object.keys(nodes).forEach(key => {
+        const node = nodes[key];
+        if (node.el) {
+          preResetPositions[key] = {
+            left: node.el.style.left,
+            top: node.el.style.top
+          };
+        }
+      });
+    }
+
+    // Reset all positions to original
+    function resetAllPositions() {
+      // Store current positions before resetting
+      storePreResetPositions();
+      
+      Object.keys(originalPositions).forEach(key => {
+        const node = nodes[key];
+        if (node.el && originalPositions[key]) {
+          node.el.style.left = originalPositions[key].left;
+          node.el.style.top = originalPositions[key].top;
+        }
+      });
+      drawLines();
+      hasResetPositions = true;
+      resetPositionsBtn.innerText = 'UNDO';
+      resetPositionsBtn.classList.add('active');
+    }
+
+    // Undo the reset (restore pre-reset positions)
+    function undoPositionReset() {
+      Object.keys(preResetPositions).forEach(key => {
+        const node = nodes[key];
+        if (node.el && preResetPositions[key]) {
+          node.el.style.left = preResetPositions[key].left;
+          node.el.style.top = preResetPositions[key].top;
+        }
+      });
+      drawLines();
+      
+      // Clear the stored pre-reset positions
+      preResetPositions = {};
+      hasResetPositions = false;
+      resetPositionsBtn.innerText = 'RESET';
+      resetPositionsBtn.classList.remove('active');
+    }
+
+    resetPositionsBtn.onclick = () => {
+      if (hasResetPositions) {
+        undoPositionReset();
+      } else {
+        resetAllPositions();
+      }
+    };
+
+    // Track Actions toggle
+    const trackActionsBtn = document.getElementById('toggle-track-actions');
+    let trackActionsEnabled = true; // Default: ON (blue)
+
+    trackActionsBtn.onclick = function() {
+      trackActionsEnabled = !trackActionsEnabled;
+      this.classList.toggle('active', trackActionsEnabled);
+    };
+
+    document.getElementById('toggle-edit').onclick = function() {
+      editMode = !editMode;
+      this.classList.toggle('active', editMode);
+      this.innerText = editMode ? "Edit Layout: ON" : "Edit Layout: OFF";
+      
+      // Show/hide RESET button based on edit mode
+      if (editMode) {
+        resetPositionsBtn.classList.remove('hidden');
+      } else {
+        resetPositionsBtn.classList.add('hidden');
+        // Reset button state when edit mode is turned off
+        hasResetPositions = false;
+        resetPositionsBtn.innerText = 'RESET';
+        resetPositionsBtn.classList.remove('active');
+      }
+    };
+
+    const logToggleBtn = document.getElementById('toggle-log');
+    const toggleLog = () => { logWindow.classList.toggle('visible'); logToggleBtn.classList.toggle('active'); };
+    logToggleBtn.onclick = toggleLog;
+    document.getElementById('close-log').onclick = toggleLog;
+    document.getElementById('reset-view').onclick = centerPrimaryNode;
+    
+    // Initialize folder system
+    setupSteppedScroll('rng-box', 'rng-scroll', 3, 3, ["20ft", "15ft", "10ft", "5ft"]);
+    
+    // Setup HIT scroll functionality
+    const hitScroll = document.getElementById('hit-scroll');
+    const hitValues = [];
+    if (hitScroll) {
+      for (let i = 30; i >= -10; i--) {
+        const valStr = (i >= 0 ? '+' : '') + i;
+        hitValues.push(valStr);
+        const div = document.createElement('div');
+        div.className = 'scroll-item';
+        div.textContent = valStr;
+        hitScroll.appendChild(div);
+      }
+    }
+    setupSteppedScroll('hit-box', 'hit-scroll', 23, 40, hitValues);
+
+    // Setup DMG scroll functionality (1-20, default 3)
+    const dmgScroll = document.getElementById('dmg-scroll');
+    const dmgValues = [];
+    if (dmgScroll) {
+      for (let i = 20; i >= 1; i--) {
+        const valStr = String(i);
+        dmgValues.push(valStr);
+        const div = document.createElement('div');
+        div.className = 'scroll-item';
+        div.textContent = valStr;
+        dmgScroll.appendChild(div);
+      }
+    }
+    setupSteppedScroll('dmg-box', 'dmg-scroll', 17, 19, dmgValues);
+
+    updatePositions();
+    
+    // Store original positions for reset functionality
+    storeOriginalPositions();
+    
+    window.onload = centerPrimaryNode;
+    window.onresize = drawLines;
+  })();
+</script>
+</body>
+</html>

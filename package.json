@@ -1,0 +1,11 @@
+{
+  "name": "flyover-flowchart",
+  "private": true,
+  "version": "1.0.0",
+  "scripts": {
+    "validate": "node scripts/validate_all.js",
+    "validate:smoke": "node scripts/boundary_normalization_smoke.js",
+    "validate:replay": "node scripts/validate_replay.js",
+    "validate:str": "node scripts/str_commit_revert_smoke.js"
+  }
+}

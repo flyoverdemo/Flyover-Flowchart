@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Manual Character Import</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: #f1f5f9;
+      padding: 20px;
+    }
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+      background: white;
+      padding: 30px;
+      border-radius: 8px;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    }
+    h1 {
+      color: #1e293b;
+      margin-top: 0;
+    }
+    .form-group {
+      margin-bottom: 20px;
+    }
+    label {
+      display: block;
+      margin-bottom: 8px;
+      color: #475569;
+      font-weight: 600;
+      font-size: 14px;
+    }
+    input[type="text"],
+    input[type="number"],
+    select {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid #cbd5e1;
+      border-radius: 6px;
+      font-size: 14px;
+      font-family: inherit;
+    }
+    input:focus,
+    select:focus {
+      outline: none;
+      border-color: #3b82f6;
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    }
+    .row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 15px;
+    }
+    .row.full {
+      grid-template-columns: 1fr;
+    }
+    .button-group {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 30px;
+    }
+    button {
+      padding: 12px 20px;
+      border: none;
+      border-radius: 6px;
+      font-weight: 600;
+      cursor: pointer;
+      font-size: 14px;
+      transition: all 0.2s;
+    }
+    .btn-import {
+      background-color: #3b82f6;
+      color: white;
+    }
+    .btn-import:hover {
+      background-color: #2563eb;
+    }
+    .btn-cancel {
+      background-color: #e2e8f0;
+      color: #475569;
+    }
+    .btn-cancel:hover {
+      background-color: #cbd5e1;
+    }
+    .abilities-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+    }
+    .ability-input {
+      display: flex;
+      flex-direction: column;
+    }
+    .ability-input input {
+      padding: 8px;
+      font-size: 13px;
+    }
+    .ability-input label {
+      margin-bottom: 4px;
+      font-size: 12px;
+    }
+    .section-title {
+      font-size: 16px;
+      font-weight: 700;
+      color: #1e293b;
+      margin: 25px 0 15px 0;
+      border-bottom: 2px solid #e2e8f0;
+      padding-bottom: 10px;
+    }
+    .success-message {
+      display: none;
+      padding: 12px;
+      background-color: #dcfce7;
+      color: #166534;
+      border-radius: 6px;
+      margin-bottom: 20px;
+      border-left: 4px solid #22c55e;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>⚔️ Manual Character Import</h1>
+    <p style="color: #64748b; margin-bottom: 25px;">Enter your D&D 5e character details below. This will be saved to your browser's local storage.</p>
+    
+    <div class="success-message" id="successMsg">✓ Character imported successfully!</div>
+
+    <form id="characterForm">
+      <!-- Character Info -->
+      <div class="section-title">Character Information</div>
+      
+      <div class="form-group">
+        <label>Character Name *</label>
+        <input type="text" id="name" required placeholder="e.g., Aragorn">
+      </div>
+
+      <div class="row">
+        <div class="form-group">
+          <label>Class *</label>
+          <select id="class" required>
+            <option value="">-- Select Class --</option>
+            <option>Barbarian</option>
+            <option>Bard</option>
+            <option>Cleric</option>
+            <option>Druid</option>
+            <option>Fighter</option>
+            <option>Monk</option>
+            <option>Paladin</option>
+            <option>Ranger</option>
+            <option>Rogue</option>
+            <option>Sorcerer</option>
+            <option>Warlock</option>
+            <option>Wizard</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Level (1-20) *</label>
+          <input type="number" id="level" required min="1" max="20" placeholder="5">
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="form-group">
+          <label>Race *</label>
+          <select id="race" required>
+            <option value="">-- Select Race --</option>
+            <option>Human</option>
+            <option>Elf</option>
+            <option>Dwarf</option>
+            <option>Halfling</option>
+            <option>Dragonborn</option>
+            <option>Tiefling</option>
+            <option>Gnome</option>
+            <option>Half-Elf</option>
+            <option>Half-Orc</option>
+            <option>Orc</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Background</label>
+          <input type="text" id="background" placeholder="e.g., Soldier">
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Alignment</label>
+        <select id="alignment">
+          <option value="">-- Select Alignment --</option>
+          <option>Lawful Good</option>
+          <option>Neutral Good</option>
+          <option>Chaotic Good</option>
+          <option>Lawful Neutral</option>
+          <option>True Neutral</option>
+          <option>Chaotic Neutral</option>
+          <option>Lawful Evil</option>
+          <option>Neutral Evil</option>
+          <option>Chaotic Evil</option>
+        </select>
+      </div>
+
+      <!-- Combat Stats -->
+      <div class="section-title">Combat Statistics</div>
+
+      <div class="row">
+        <div class="form-group">
+          <label>Armor Class (AC) *</label>
+          <input type="number" id="ac" required min="1" max="30" placeholder="16">
+        </div>
+        <div class="form-group">
+          <label>Hit Points (HP) *</label>
+          <input type="number" id="hp" required min="1" max="300" placeholder="48">
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="form-group">
+          <label>Speed (ft/round) *</label>
+          <input type="number" id="speed" required min="0" max="120" value="30" placeholder="30">
+        </div>
+        <div class="form-group">
+          <label>Proficiency Bonus *</label>
+          <input type="number" id="profBonus" required min="2" max="6" value="2" placeholder="2">
+        </div>
+      </div>
+
+      <!-- Ability Scores -->
+      <div class="section-title">Ability Scores</div>
+
+      <div class="abilities-grid">
+        <div class="ability-input">
+          <label>Strength</label>
+          <input type="number" id="str" min="1" max="20" placeholder="10">
+        </div>
+        <div class="ability-input">
+          <label>Dexterity</label>
+          <input type="number" id="dex" min="1" max="20" placeholder="10">
+        </div>
+        <div class="ability-input">
+          <label>Constitution</label>
+          <input type="number" id="con" min="1" max="20" placeholder="10">
+        </div>
+        <div class="ability-input">
+          <label>Intelligence</label>
+          <input type="number" id="int" min="1" max="20" placeholder="10">
+        </div>
+        <div class="ability-input">
+          <label>Wisdom</label>
+          <input type="number" id="wis" min="1" max="20" placeholder="10">
+        </div>
+        <div class="ability-input">
+          <label>Charisma</label>
+          <input type="number" id="cha" min="1" max="20" placeholder="10">
+        </div>
+      </div>
+
+      <!-- Buttons -->
+      <div class="button-group">
+        <button type="submit" class="btn-import">📥 Import Character</button>
+        <button type="reset" class="btn-cancel">Clear</button>
+      </div>
+    </form>
+  </div>
+
+  <script>
+    document.getElementById('characterForm').addEventListener('submit', function(e) {
+      e.preventDefault();
+
+      // Build character data object
+      const characterData = {
+        schema: 'chain_warden_v1',
+        lastUpdated: new Date().toISOString(),
+        character: {
+          name: document.getElementById('name').value,
+          class: document.getElementById('class').value,
+          subclass: '',
+          level: parseInt(document.getElementById('level').value),
+          background: document.getElementById('background').value || null,
+          race: document.getElementById('race').value,
+          alignment: document.getElementById('alignment').value || null,
+          experiencePoints: 0
+        },
+        combat: {
+          armorClass: parseInt(document.getElementById('ac').value),
+          hitPoints: {
+            max: parseInt(document.getElementById('hp').value),
+            current: parseInt(document.getElementById('hp').value),
+            temp: 0
+          },
+          hitDice: '1d10',
+          speed: parseInt(document.getElementById('speed').value),
+          initiative: 0,
+          proficiencyBonus: parseInt(document.getElementById('profBonus').value)
+        },
+        abilityScores: {
+          strength: {
+            score: parseInt(document.getElementById('str').value) || null,
+            modifier: calculateModifier(parseInt(document.getElementById('str').value)),
+            savingThrow: calculateModifier(parseInt(document.getElementById('str').value)),
+            skills: []
+          },
+          dexterity: {
+            score: parseInt(document.getElementById('dex').value) || null,
+            modifier: calculateModifier(parseInt(document.getElementById('dex').value)),
+            savingThrow: calculateModifier(parseInt(document.getElementById('dex').value)),
+            skills: []
+          },
+          constitution: {
+            score: parseInt(document.getElementById('con').value) || null,
+            modifier: calculateModifier(parseInt(document.getElementById('con').value)),
+            savingThrow: calculateModifier(parseInt(document.getElementById('con').value)),
+            skills: []
+          },
+          intelligence: {
+            score: parseInt(document.getElementById('int').value) || null,
+            modifier: calculateModifier(parseInt(document.getElementById('int').value)),
+            savingThrow: calculateModifier(parseInt(document.getElementById('int').value)),
+            skills: []
+          },
+          wisdom: {
+            score: parseInt(document.getElementById('wis').value) || null,
+            modifier: calculateModifier(parseInt(document.getElementById('wis').value)),
+            savingThrow: calculateModifier(parseInt(document.getElementById('wis').value)),
+            skills: []
+          },
+          charisma: {
+            score: parseInt(document.getElementById('cha').value) || null,
+            modifier: calculateModifier(parseInt(document.getElementById('cha').value)),
+            savingThrow: calculateModifier(parseInt(document.getElementById('cha').value)),
+            skills: []
+          }
+        },
+        actions: { primary: [], bonus: [], reaction: [] },
+        features: [],
+        spellSlots: {},
+        spells: [],
+        equipment: {},
+        proficiencies: {},
+        metadata: {
+          source: 'manual_import',
+          parserVersion: '1.0.0',
+          needsReview: false,
+          notes: 'Manually imported character'
+        }
+      };
+
+      // Save to localStorage
+      let tempIndex = 1;
+      let key = `char_${String(tempIndex).padStart(2, '0')}`;
+      while (localStorage.getItem(key)) {
+        tempIndex++;
+        key = `char_${String(tempIndex).padStart(2, '0')}`;
+      }
+
+      localStorage.setItem(key, JSON.stringify(characterData));
+
+      // Update temp characters list
+      let tempList = JSON.parse(localStorage.getItem('temp_characters') || '[]');
+      if (!tempList.includes(key)) {
+        tempList.push(key);
+        localStorage.setItem('temp_characters', JSON.stringify(tempList));
+      }
+
+      // Show success message
+      const successMsg = document.getElementById('successMsg');
+      successMsg.style.display = 'block';
+      successMsg.textContent = `✓ Character "${characterData.character.name}" imported as ${key}!`;
+
+      // Redirect or close after 2 seconds
+      setTimeout(() => {
+        if (window.opener) {
+          window.opener.location.reload();
+          window.close();
+        } else {
+          window.location.href = 'index.html';
+        }
+      }, 2000);
+    });
+
+    function calculateModifier(score) {
+      if (!score || isNaN(score)) return 0;
+      return Math.floor((score - 10) / 2);
+    }
+
+    // Pre-fill example data for testing
+    function loadExample() {
+      document.getElementById('name').value = 'Aragorn';
+      document.getElementById('class').value = 'Fighter';
+      document.getElementById('level').value = '5';
+      document.getElementById('race').value = 'Human';
+      document.getElementById('background').value = 'Soldier';
+      document.getElementById('alignment').value = 'Lawful Good';
+      document.getElementById('ac').value = '16';
+      document.getElementById('hp').value = '48';
+      document.getElementById('speed').value = '30';
+      document.getElementById('profBonus').value = '3';
+      document.getElementById('str').value = '15';
+      document.getElementById('dex').value = '12';
+      document.getElementById('con').value = '14';
+      document.getElementById('int').value = '10';
+      document.getElementById('wis').value = '11';
+      document.getElementById('cha').value = '13';
+    }
+  </script>
+</body>
+</html>

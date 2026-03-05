@@ -1,0 +1,147 @@
+{
+  "schema": "chain_warden_v1",
+  "lastUpdated": "2024-01-01T00:00:00Z",
+  "character": {
+    "name": "Chain Warden",
+    "class": "Paladin",
+    "subclass": "Oath of Conquest",
+    "level": 9,
+    "background": "Soldier",
+    "race": "Human",
+    "alignment": "Lawful Neutral",
+    "experiencePoints": 0
+  },
+  "abilityScores": {
+    "strength": { "score": 16, "modifier": 3, "savingThrow": 3, "skills": ["Athletics"] },
+    "dexterity": { "score": 14, "modifier": 2, "savingThrow": 2, "skills": [] },
+    "constitution": { "score": 16, "modifier": 3, "savingThrow": 3, "skills": [] },
+    "intelligence": { "score": 10, "modifier": 0, "savingThrow": 0, "skills": [] },
+    "wisdom": { "score": 14, "modifier": 2, "savingThrow": 2, "skills": ["Insight", "Perception"] },
+    "charisma": { "score": 18, "modifier": 4, "savingThrow": 4, "skills": ["Intimidation", "Persuasion"] }
+  },
+  "combat": {
+    "armorClass": 18,
+    "hitPoints": { "max": 75, "current": 75, "temp": 0 },
+    "hitDice": "10d10",
+    "speed": 30,
+    "initiative": 2,
+    "proficiencyBonus": 4
+  },
+  "actions": {
+    "primary": [
+      {
+        "id": "unarmed_strike",
+        "name": "Unarmed Strike",
+        "type": "weapon_attack",
+        "cost": "1_action",
+        "range": "5ft",
+        "toHit": 7,
+        "damage": { "dice": "1d4", "modifier": 3, "type": "bludgeoning" },
+        "description": "Melee Weapon Attack: +7 to hit, reach 5 ft., one target.",
+        "source": "PHB",
+        "externalLink": null
+      },
+      {
+        "id": "divine_smite",
+        "name": "Divine Smite",
+        "type": "class_feature",
+        "cost": "1_bonus_action",
+        "uses": { "per": "day", "max": 1 },
+        "level": "9th",
+        "radiantBonus": 4,
+        "description": "When you hit a creature with a melee weapon attack, you can expend one spell slot to deal radiant damage.",
+        "source": "PHB",
+        "externalLink": null
+      },
+      {
+        "id": "blight_smite",
+        "name": "Blight Smite",
+        "type": "homebrew_smite",
+        "cost": "1_action",
+        "range": "30ft",
+        "saveDC": 15,
+        "damage": { "dice": "2d6", "type": "necrotic" },
+        "description": "Ranged spell attack that deals necrotic damage on a failed save.",
+        "source": "Homebrew",
+        "externalLink": null
+      }
+    ],
+    "bonus": [],
+    "reaction": []
+  },
+  "features": [
+    {
+      "name": "Divine Sense",
+      "uses": { "per": "long_rest", "max": 5 },
+      "description": "Detect celestials, fiends, or undead within 60ft."
+    },
+    {
+      "name": "Lay on Hands",
+      "uses": { "per": "long_rest", "max": 45 },
+      "description": "Restore hit points from a pool of 45 HP."
+    },
+    {
+      "name": "Fighting Style: Dueling",
+      "description": "+2 damage when wielding a melee weapon in one hand."
+    },
+    {
+      "name": "Spellcasting",
+      "ability": "charisma",
+      "saveDC": 14,
+      "spellAttack": 6
+    }
+  ],
+  "spellSlots": {
+    "level1": 0,
+    "level2": 0,
+    "level3": 0,
+    "level4": 2,
+    "level5": 0
+  },
+  "spells": [
+    {
+      "name": "Bless",
+      "level": 1,
+      "school": "Enchantment",
+      "castingTime": "1_action",
+      "duration": "Concentration, up to 1 minute",
+      "source": "PHB"
+    },
+    {
+      "name": "Command",
+      "level": 1,
+      "school": "Enchantment",
+      "castingTime": "1_action",
+      "duration": "1 round",
+      "source": "PHB"
+    }
+  ],
+  "equipment": {
+    "weapons": [
+      {
+        "name": "Unarmed Strike",
+        "damage": "1d4",
+        "damageType": "bludgeoning",
+        "properties": ["simple", "melee"]
+      }
+    ],
+    "armor": {
+      "name": "Plate Armor",
+      "ac": 18,
+      "stealthDisadvantage": true
+    }
+  },
+  "proficiencies": {
+    "armor": ["Light", "Medium", "Heavy", "Shields"],
+    "weapons": ["Simple", "Martial"],
+    "tools": [],
+    "savingThrows": ["Wisdom", "Charisma"],
+    "skills": ["Athletics", "Insight", "Intimidation", "Perception", "Persuasion"]
+  },
+  "metadata": {
+    "pdfSource": "chain_warden.pdf",
+    "parserVersion": "1.0.0",
+    "needsReview": false,
+    "notes": ""
+  }
+}

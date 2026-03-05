@@ -1,0 +1,1493 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Action Flowchart Builder</title>
+  <style>
+    :root {
+      /* Original Colors */
+      --primary-color: #3b82f6;
+      --secondary-color: #10b981;
+      --yellow-accent: #f59e0b;
+      --bg-grid: #e5eef7;
+      --header-bg: #f8fafc;
+      --text-main: #1e293b;
+      --panel-bg: #ffffff;
+      
+      /* New Folder System Colors */
+      --yellow-main: #f59e0b;
+      --yellow-light: #fbbf24;
+      --purple-main: #8b5cf6;
+      --purple-light: #a78bfa;
+      --grey-main: #64748b;
+      --grey-light: #94a3b8;
+      --design-main: #1e293b;
+      --design-light: #334155;
+      --design-accent: #38bdf8;
+      --folder-tan: #f3e5ab;
+      --folder-tan-dark: #e5d394;
+      --folder-text: #1e293b;
+      --bg-color: #f8fafc;
+      
+      /* Card Dimensions */
+      --card-height: 155px;
+      --card-width: 240px;
+      
+      /* Position Constants */
+      --pos-1-y: 0px;    
+      --pos-2-y: 35px;  
+      --pos-3-y: 70px;
+      --folder-offset: 8px;
+      --label-bar-height: 42px;
+      
+      /* Dynamic height variable */
+      --folder-dynamic-height: calc(var(--card-height) + var(--pos-3-y) + (var(--folder-offset) * 2));
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      color: var(--text-main);
+      background-color: #f1f5f9;
+      overflow: hidden;
+      touch-action: none; 
+    }
+
+    header {
+      background-color: var(--header-bg);
+      padding: 12px 24px;
+      text-align: center;
+      font-weight: 600;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      z-index: 100;
+    }
+
+    main {
+      flex: 1;
+      position: relative;
+      overflow: hidden;
+      background-color: #ffffff;
+      background-image: 
+        linear-gradient(var(--bg-grid) 1px, transparent 1px),
+        linear-gradient(90deg, var(--bg-grid) 1px, transparent 1px);
+      background-size: 40px 40px;
+    }
+
+    #world {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 5000px;
+      height: 5000px;
+      transform-origin: 0 0;
+      pointer-events: none;
+    }
+
+    #connection-layer {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 1;
+    }
+
+    .node {
+      position: absolute;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 14px;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+      z-index: 10;
+      user-select: none;
+      pointer-events: auto;
+    }
+
+    /* Fixed Roll Overlay Styles */
+    #roll-display-overlay {
+      position: fixed;
+      top: 40px;
+      right: 40px;
+      background: white;
+      border-radius: 12px;
+      padding: 16px 24px;
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+      border: 1px solid rgba(0,0,0,0.05);
+      z-index: 1000;
+      pointer-events: none;
+      opacity: 0;
+      transform: translateY(-20px) scale(0.9);
+      transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-width: 140px;
+    }
+
+    #roll-display-overlay.show {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+
+    .roll-label {
+      font-size: 10px;
+      font-weight: 800;
+      color: var(--grey-main);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 4px;
+    }
+
+    .roll-main {
+      font-size: 32px;
+      font-weight: 900;
+      color: var(--folder-text);
+      line-height: 1;
+    }
+
+    .roll-math {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--grey-light);
+      margin-top: 4px;
+    }
+
+    /* Folder Card System */
+    .card-stack {
+      position: absolute;
+      width: var(--card-width);
+      height: calc(var(--card-height) + var(--pos-3-y));
+      margin-top: calc(var(--label-bar-height) + var(--folder-offset));
+      pointer-events: auto;
+      z-index: 20;
+    }
+
+    .folder-label-bar {
+      position: absolute;
+      top: calc(-1 * var(--folder-offset) - var(--label-bar-height));
+      left: calc(-1 * var(--folder-offset)); 
+      width: calc(100% + (var(--folder-offset) * 2));
+      height: var(--label-bar-height);
+      background-color: var(--folder-tan);
+      z-index: 60; 
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      border-radius: 6px 6px 0 0;
+      padding: 0 12px;
+    }
+
+    .label-bar-text {
+      color: var(--folder-text);
+      font-size: 14px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      flex-grow: 1;
+      text-align: center;
+      margin-left: 20px; 
+    }
+
+    .title-toggle {
+      width: 16px;
+      height: 16px;
+      border: 2px solid var(--folder-text);
+      border-radius: 3px;
+      cursor: pointer;
+      transition: background 0.2s ease;
+    }
+
+    .title-toggle.active {
+      background-color: var(--folder-text);
+    }
+    
+    .folder-back {
+      position: absolute;
+      top: calc(-1 * var(--folder-offset));
+      left: calc(-1 * var(--folder-offset));
+      width: calc(100% + (var(--folder-offset) * 2));
+      height: var(--folder-dynamic-height);
+      background-color: var(--folder-tan-dark);
+      border-radius: 8px;
+      z-index: 0;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+      border: 1px solid rgba(0,0,0,0.05);
+      transition: height 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    .side-panel {
+      position: absolute;
+      top: calc(-1 * var(--folder-offset));
+      left: calc(-1 * (var(--card-width) + var(--folder-offset) + 20px));
+      width: calc(var(--card-width) + (var(--folder-offset) * 2));
+      height: calc(var(--card-height) + var(--pos-3-y) + (var(--folder-offset) * 2));
+      background-color: var(--folder-tan-dark);
+      border-radius: 8px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+      border: 1px solid rgba(0,0,0,0.05);
+      opacity: 0;
+      transform: translateX(-20px) scale(0.95);
+      transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+      pointer-events: none;
+      display: flex;
+      flex-direction: column;
+      padding: 15px;
+      color: var(--folder-text);
+      margin-top: calc(var(--label-bar-height));
+      z-index: 25;
+    }
+
+    .side-panel.show {
+      opacity: 1;
+      transform: translateX(0) scale(1);
+      pointer-events: auto;
+    }
+
+    .panel-header {
+      font-weight: 800;
+      font-size: 12px;
+      text-transform: uppercase;
+      border-bottom: 2px solid rgba(0,0,0,0.1);
+      padding-bottom: 8px;
+      margin-bottom: 12px;
+    }
+
+    .panel-content {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      flex: 1;
+      overflow-y: auto;
+    }
+
+    .toggle-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .panel-toggle-square {
+      width: 20px;
+      height: 20px;
+      border: 1px solid var(--folder-text); 
+      border-radius: 4px;
+      cursor: pointer;
+      position: relative;
+      background: transparent;
+      flex-shrink: 0;
+      transition: opacity 0.2s;
+    }
+
+    .panel-toggle-square::after {
+      content: '';
+      position: absolute;
+      top: 3px;
+      left: 3px;
+      right: 3px;
+      bottom: 3px;
+      border-radius: 2px;
+      background-color: transparent;
+      transition: background-color 0.2s ease;
+    }
+
+    .panel-toggle-square.active::after {
+      background-color: var(--folder-text);
+    }
+
+    .panel-toggle-square.active.toggle-yellow::after {
+      background-color: var(--yellow-main);
+    }
+
+    .panel-toggle-square.active.toggle-purple::after {
+      background-color: var(--purple-main);
+    }
+
+    .panel-toggle-square.active.toggle-green::after {
+      background-color: var(--secondary-color);
+    }
+
+    .panel-toggle-square.locked {
+      cursor: not-allowed;
+    }
+
+    .panel-toggle-square.locked::after {
+      background-color: var(--grey-light) !important;
+    }
+
+    .panel-toggle-square:not(.locked):hover {
+      background: rgba(0,0,0,0.05);
+    }
+
+    .toggle-label {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+      color: var(--folder-text);
+    }
+
+    .panel-info-text {
+      margin-top: 8px;
+      font-size: 10px; 
+      line-height: 1.4; 
+      opacity: 0.6;
+      font-style: italic;
+    }
+
+    .card {
+      width: var(--card-width); 
+      height: var(--card-height); 
+      border-radius: 12px;
+      color: white; 
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      user-select: none;
+      overflow: hidden;
+      position: relative;
+      flex-shrink: 0;
+    }
+
+    .stack-card {
+      position: absolute;
+      left: 0;
+      transition: transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1), z-index 0.2s, opacity 0.3s;
+    }
+
+    .card-cost-header {
+      position: absolute;
+      top: 10px;
+      left: 0;
+      width: 100%;
+      text-align: center;
+      font-size: 9px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      opacity: 0.8;
+      pointer-events: none;
+    }
+
+    .card-green { background-color: var(--secondary-color); }
+    .card-yellow { background: linear-gradient(135deg, var(--yellow-light), var(--yellow-main)); }
+    .card-purple { background: linear-gradient(135deg, var(--purple-light), var(--purple-main)); }
+    .card-grey { background: linear-gradient(135deg, var(--grey-light), var(--grey-main)); }
+    
+    .card.at-pos-1 {
+      z-index: 30;
+      transform: translateY(var(--pos-1-y));
+      opacity: 1;
+    }
+
+    .card.at-pos-2 {
+      z-index: 20;
+      transform: translateY(var(--pos-2-y));
+      opacity: 1;
+    }
+
+    .card.at-pos-3 {
+      z-index: 10;
+      transform: translateY(var(--pos-3-y));
+      opacity: 1;
+    }
+
+    .card.hidden {
+      pointer-events: none;
+      opacity: 0;
+      transform: translateY(var(--pos-3-y)) scale(0.9);
+      z-index: 0;
+    }
+
+    .card.swapping {
+      z-index: 45 !important; 
+      transform: translateY(calc(var(--card-height) + 10px)) scale(1.02);
+      transition: transform 0.3s ease-out, z-index 0s;
+    }
+
+    .card-footer {
+      font-size: 10px;
+      font-weight: 800;
+      text-transform: uppercase;
+      padding: 12px;
+      text-align: center;
+      background: rgba(0,0,0,0.15);
+      border-top: 1px solid rgba(255,255,255,0.2);
+      cursor: pointer;
+    }
+
+    .card.at-pos-1 .card-footer {
+      cursor: default;
+    }
+
+    .card-body {
+      display: flex;
+      justify-content: space-around;
+      flex: 1;
+      align-items: center;
+      padding: 0 10px;
+      padding-top: 20px;
+    }
+
+    .stat-group {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px; 
+    }
+
+    .stat-box {
+      width: 44px;
+      height: 44px;
+      background: rgba(255, 255, 255, 0.2);
+      border-radius: 8px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      font-weight: 700;
+      font-size: 14px;
+      cursor: pointer;
+      transition: background 0.2s, outline 0.2s, box-shadow 0.2s, transform 0.2s;
+      position: relative;
+      overflow: hidden; 
+      outline: 0px solid transparent;
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .stat-box-fixed-symbol {
+      position: absolute;
+      right: 4px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 12px;
+      height: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      pointer-events: none;
+      opacity: 0.85;
+    }
+
+    .stat-box.has-fixed-symbol .scroll-container {
+      padding-right: 10px;
+    }
+
+    .stat-box.pressing {
+      transform: scale(0.9) !important;
+      background: rgba(255, 255, 255, 0.4) !important;
+    }
+
+    .stat-box.modified {
+      outline: 2px solid var(--yellow-main);
+      box-shadow: 0 0 8px rgba(245, 158, 11, 0.4);
+    }
+
+    .stat-box:active {
+      background: rgba(255, 255, 255, 0.4);
+    }
+
+    .stat-label { 
+      font-size: 8px; 
+      font-weight: 800;
+      text-transform: uppercase;
+      opacity: 0.9; 
+    }
+
+    .scroll-container {
+      height: 44px; 
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+      pointer-events: none;
+    }
+
+    .scroll-item {
+      height: 44px;
+      line-height: 44px;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      text-align: center;
+    }
+
+    .card.stack-card:not(.at-pos-1) .card-body {
+      pointer-events: none;
+      opacity: 0.6;
+    }
+
+    .hidden { display: none !important; }
+
+    .primary-button { background-color: var(--primary-color); color: white; width: 160px; height: 60px; }
+    .action-button { background-color: #475569; color: white; width: 130px; height: 50px; }
+    .child-button { background-color: #94a3b8; color: white; width: 110px; height: 40px; }
+
+    /* Log Window Styles */
+    #log-window {
+      position: fixed;
+      bottom: 80px;
+      right: 20px;
+      width: 280px;
+      height: 350px;
+      background: var(--panel-bg);
+      border-radius: 12px;
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.2);
+      display: flex;
+      flex-direction: column;
+      z-index: 1000;
+      border: 1px solid #e2e8f0;
+      transform: translateY(20px);
+      opacity: 0;
+      pointer-events: none;
+      transition: transform 0.2s ease-out, opacity 0.2s ease-out, height 0s;
+    }
+
+    #log-window.visible {
+      transform: translateY(0);
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .log-header {
+      padding: 12px 16px;
+      background: #f8fafc;
+      border-bottom: 1px solid #e2e8f0;
+      font-weight: 700;
+      font-size: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      border-top-left-radius: 12px;
+      border-top-right-radius: 12px;
+      cursor: grab;
+      user-select: none;
+    }
+
+    .log-header:active {
+      cursor: grabbing;
+    }
+
+    .log-header-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      width: 100%;
+    }
+
+    .log-controls {
+      display: flex;
+      gap: 6px;
+      width: 100%;
+    }
+
+    .log-btn {
+      flex: 1;
+      padding: 4px;
+      font-size: 11px;
+      text-transform: uppercase;
+      border: 1px solid #cbd5e1;
+      background: white;
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: 700;
+      color: #64748b;
+      transition: all 0.2s;
+    }
+
+    .log-btn:hover {
+      background: #f1f5f9;
+      color: #334155;
+    }
+
+    .log-btn:active {
+      background: #e2e8f0;
+    }
+
+    .log-btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    #log-content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      pointer-events: auto;
+    }
+
+    .log-entry {
+      background: #f1f5f9;
+      padding: 8px 12px;
+      border-radius: 6px;
+      font-size: 13px;
+      border-left: 3px solid var(--primary-color);
+      color: #334155;
+    }
+
+    .log-entry.damage { border-left-color: #ef4444; }
+    .log-entry.hit { border-left-color: #10b981; }
+
+    /* Resize Handle */
+    #log-resize-handle {
+      height: 12px;
+      width: 100%;
+      cursor: ns-resize;
+      background: transparent;
+      border-bottom-left-radius: 12px;
+      border-bottom-right-radius: 12px;
+      transition: background 0.2s;
+      flex-shrink: 0;
+    }
+
+    #log-resize-handle:hover {
+      background: rgba(59, 130, 246, 0.1);
+    }
+
+    footer {
+      background-color: var(--header-bg);
+      padding: 12px;
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+      z-index: 100;
+      border-top: 1px solid #e2e8f0;
+    }
+
+    .footer-button {
+      padding: 10px 20px;
+      border-radius: 6px;
+      border: 1px solid #cbd5e1;
+      background: white;
+      cursor: pointer;
+      font-weight: 500;
+      touch-action: manipulation;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .footer-button.active {
+      background: var(--primary-color);
+      color: white;
+      border-color: var(--primary-color);
+    }
+    
+    .log-badge {
+      background: #ef4444;
+      color: white;
+      font-size: 10px;
+      padding: 2px 6px;
+      border-radius: 10px;
+      font-weight: 800;
+    }
+
+    .close-btn {
+      cursor: pointer;
+      font-size: 18px;
+      line-height: 1;
+      color: #94a3b8;
+    }
+
+    /* Fixed squares in upper left corner */
+    .fixed-squares {
+      position: fixed;
+      top: 80px;
+      left: 20px;
+      z-index: 2000;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      pointer-events: none;
+    }
+
+    .square-container {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      pointer-events: none;
+    }
+
+    .fixed-square {
+      width: 30px;
+      height: 30px;
+      background: transparent;
+      border: 2px solid black;
+      border-radius: 8px;
+      pointer-events: auto;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: black;
+      font-weight: 600;
+      font-size: 12px;
+      flex-shrink: 0;
+      position: relative;
+      transition: all 0.2s ease;
+    }
+
+    .fixed-square::before {
+      content: '';
+      position: absolute;
+      top: 3px;
+      left: 3px;
+      right: 3px;
+      bottom: 3px;
+      border-radius: 6px;
+      opacity: 0;
+      transition: opacity 0.2s ease;
+    }
+
+    .fixed-square.active::before {
+      opacity: 1;
+    }
+
+    .fixed-square#square-1.active::before {
+      background: var(--primary-color);
+    }
+
+    .fixed-square#square-2.active::before {
+      background: var(--yellow-accent);
+    }
+
+    .fixed-square#square-3.active::before {
+      background: #8b5cf6;
+    }
+
+    .square-label {
+      color: white;
+      font-weight: 600;
+      font-size: 14px;
+      pointer-events: none;
+      white-space: nowrap;
+      background: var(--primary-color);
+      padding: 4px 8px;
+      border-radius: 4px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      transition: background 0.2s ease;
+    }
+
+    .square-container:nth-child(1) .square-label {
+      background: var(--primary-color);
+    }
+
+    .square-container:nth-child(2) .square-label {
+      background: var(--yellow-accent);
+    }
+
+    .square-container:nth-child(3) .square-label {
+      background: #8b5cf6;
+    }
+
+    .fixed-square:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+    }
+
+    .fixed-square:active {
+      transform: translateY(0);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    }
+  </style>
+</head>
+<body>
+
+<header>Action Flowchart Builder</header>
+
+<!-- Fixed squares in upper left corner -->
+<div class="fixed-squares">
+  <div class="square-container">
+    <div class="fixed-square" id="square-1"></div>
+    <div class="square-label">Primary Action</div>
+  </div>
+  <div class="square-container">
+    <div class="fixed-square" id="square-2"></div>
+    <div class="square-label">Bonus Action</div>
+  </div>
+  <div class="square-container">
+    <div class="fixed-square" id="square-3"></div>
+    <div class="square-label">Reaction</div>
+  </div>
+</div>
+
+<!-- Roll Display Overlay -->
+<div id="roll-display-overlay">
+  <div class="roll-label" id="roll-type-label">Hit Roll</div>
+  <div class="roll-main" id="roll-total-val">0</div>
+  <div class="roll-math" id="roll-math-val">1d20 + 0</div>
+</div>
+
+<main id="canvas-mask">
+  <div id="log-window">
+    <div class="log-header" id="log-drag-handle">
+      <div class="log-header-top">
+        Action Log
+        <span class="close-btn" id="close-log">&times;</span>
+      </div>
+      <div class="log-controls">
+        <button id="clear-log-btn" class="log-btn">Clear</button>
+        <button id="undo-log-btn" class="log-btn" disabled>Undo</button>
+      </div>
+    </div>
+    <div id="log-content">
+      <div style="text-align: center; color: #94a3b8; font-size: 12px; margin-top: 20px;">No actions recorded yet.</div>
+    </div>
+    <div id="log-resize-handle"></div>
+  </div>
+  
+  <div id="world">
+    <svg id="connection-layer">
+      <defs>
+        <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+          <path d="M 0 0 L 10 5 L 0 10 z" fill="#94a3b8" />
+        </marker>
+        <marker id="large-arrow-black" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="4" markerHeight="4" orient="auto">
+          <path d="M 0 0 L 10 5 L 0 10 z" fill="black" />
+        </marker>
+      </defs>
+    </svg>
+    
+    <div id="primary" class="node primary-button" style="left: 2500px; top: 1000px;">Primary Action</div>
+    
+    <div id="melee" class="node action-button hidden" style="left: 2350px; top: 1100px;">Melee Attack</div>
+    <div id="magic" class="node action-button hidden" style="left: 2650px; top: 1100px;">Magic Attack</div>
+    
+    <div id="unarmed" class="node child-button hidden" style="left: 2250px; top: 1200px;">Unarmed</div>
+    <div id="weapon" class="node child-button hidden" style="left: 2450px; top: 1200px;">Weapon</div>
+
+    <!-- New Folder Card Stack System -->
+    <div id="card-stack" class="card-stack hidden" style="left: 2250px; top: 1260px;">
+      <div class="folder-label-bar">
+        <span class="label-bar-text" id="active-label">Unarmed Attack</span>
+        <div class="title-toggle" id="global-toggle"></div>
+      </div>
+      <div class="folder-back" id="folder-back"></div>
+
+      <div id="card-0" class="card stack-card card-green" data-label="Unarmed Attack">
+        <div class="card-cost-header">COST: 1 Action</div>
+        <div class="card-body">
+          <div class="stat-group">
+            <span class="stat-label">RNG</span>
+            <div class="stat-box" id="rng-box">
+              <div class="scroll-container" id="rng-scroll">
+                <div class="scroll-item">20ft</div>
+                <div class="scroll-item">15ft</div>
+                <div class="scroll-item">10ft</div>
+                <div class="scroll-item">5ft</div>
+              </div>
+            </div>
+          </div>
+          <div class="stat-group">
+            <span class="stat-label">HIT</span>
+            <div class="stat-box">+7</div>
+          </div>
+          <div class="stat-group">
+            <span class="stat-label">DMG</span>
+            <div class="stat-box has-fixed-symbol" id="dmg-box">
+              <div class="scroll-container" id="dmg-scroll"></div>
+              <div class="stat-box-fixed-symbol" id="dmg-type-symbol">
+                <svg viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M21.5,14.5L13,23L11.5,21.5L12,19.5L10,17.5L8.5,18L7,16.5L4.5,19L3,17.5L5.5,15L4,13.5L4.5,12L2.5,10L0.5,11.5L2,4.5L9,2L14.5,7.5L21.5,14.5M10,8.5L8.5,10L11.5,13L13,11.5L10,8.5Z" />
+                </svg>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="card-footer">BASIC UNARMED ATTACK</div>
+      </div>
+
+      <div id="card-1" class="card stack-card card-yellow" data-label="Divine Strike">
+        <div class="card-cost-header">COST: 1 Bonus Action</div>
+        <div class="card-body">
+          <div class="stat-group">
+            <span class="stat-label">USE</span>
+            <div class="stat-box">1/1</div>
+          </div>
+          <div class="stat-group">
+            <span class="stat-label">LVL</span>
+            <div class="stat-box">9th</div>
+          </div>
+          <div class="stat-group">
+            <span class="stat-label">RAD</span>
+            <div class="stat-box">+4</div>
+          </div>
+        </div>
+        <div class="card-footer">DIVINE UNARMED ATTACK</div>
+      </div>
+
+      <div id="card-2" class="card stack-card card-purple" data-label="Blight Smite">
+        <div class="card-cost-header">COST: 1 Action</div>
+        <div class="card-body">
+          <div class="stat-group">
+            <span class="stat-label">RNG</span>
+            <div class="stat-box">30ft</div>
+          </div>
+          <div class="stat-group">
+            <span class="stat-label">SAVE</span>
+            <div class="stat-box">DC15</div>
+          </div>
+          <div class="stat-group">
+            <span class="stat-label">NEC</span>
+            <div class="stat-box">2d6</div>
+          </div>
+        </div>
+        <div class="card-footer">BLIGHT UNARMED ATTACK</div>
+      </div>
+    </div>
+
+    <!-- Side Panel for Folder Settings -->
+    <div class="side-panel" id="side-panel">
+      <div class="panel-header">FOLDER SETTINGS</div>
+      <div class="panel-content">
+        <div class="toggle-row">
+          <div class="panel-toggle-square active locked"></div>
+          <div class="toggle-label">Basic Attack</div>
+        </div>
+        <div class="toggle-row">
+          <div class="panel-toggle-square active toggle-yellow" onclick="handleCardToggle(1, this)"></div>
+          <div class="toggle-label">Divine Strike</div>
+        </div>
+        <div class="toggle-row">
+          <div class="panel-toggle-square active toggle-purple" onclick="handleCardToggle(2, this)"></div>
+          <div class="toggle-label">Blight Smite</div>
+        </div>
+        <div class="panel-info-text">
+          Toggle visibility of cards within this folder stack.
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<footer>
+  <button id="reset-view" class="footer-button">Recenter View</button>
+  <button id="toggle-edit" class="footer-button">Edit Layout: OFF</button>
+  <button id="toggle-log" class="footer-button">
+    Log 
+    <span id="log-count" class="log-badge hidden">0</span>
+  </button>
+</footer>
+
+<script>
+  (function() {
+    const mask = document.getElementById('canvas-mask');
+    const world = document.getElementById('world');
+    const svg = document.getElementById('connection-layer');
+    const logContent = document.getElementById('log-content');
+    const logWindow = document.getElementById('log-window');
+    const logDragHandle = document.getElementById('log-drag-handle');
+    const logResizeHandle = document.getElementById('log-resize-handle');
+    const logCountBadge = document.getElementById('log-count');
+    const clearBtn = document.getElementById('clear-log-btn');
+    const undoBtn = document.getElementById('undo-log-btn');
+    const cardStack = document.getElementById('card-stack');
+    
+    // New folder system elements
+    const cards = Array.from(document.querySelectorAll('.stack-card'));
+    const activeLabelText = document.getElementById('active-label');
+    const globalToggle = document.getElementById('global-toggle');
+    const sidePanel = document.getElementById('side-panel');
+    const rollOverlay = document.getElementById('roll-display-overlay');
+    const rollTypeLabel = document.getElementById('roll-type-label');
+    const rollTotalVal = document.getElementById('roll-total-val');
+    const rollMathVal = document.getElementById('roll-math-val');
+    
+    const nodes = {
+      primary: { el: document.getElementById('primary'), children: ['melee', 'magic'] },
+      melee: { el: document.getElementById('melee'), children: ['unarmed', 'weapon'] },
+      magic: { el: document.getElementById('magic'), children: [] },
+      unarmed: { el: document.getElementById('unarmed'), children: ['card-stack'] },
+      weapon: { el: document.getElementById('weapon'), children: [] },
+      'card-stack': { el: cardStack, children: [], linked: true }
+    };
+
+    const cardData = {
+      damage_type: "bludgeoning"
+    };
+
+    let panX = 0, panY = 0;
+    let scale = 1.0;
+    let editMode = false;
+    const ZOOM_LEVELS = [0.5, 1.0, 1.5];
+    let currentZoomIndex = 1;
+
+    let isPanning = false;
+    let isDraggingNode = null;
+    let lastTouchX = 0;
+    let lastTouchY = 0;
+
+    let isDraggingLog = false;
+    let isResizingLog = false;
+    let logStartX, logStartY, logStartRight, logStartBottom, logStartHeight;
+
+    // New folder system variables
+    let order = [0, 1, 2]; 
+    let visibleStates = { 0: true, 1: true, 2: true };
+    let rollTimeout;
+
+    logDragHandle.onmousedown = (e) => {
+      if (e.target.classList.contains('close-btn') || e.target.classList.contains('log-btn')) return;
+      isDraggingLog = true;
+      logStartX = e.clientX; logStartY = e.clientY;
+      logStartRight = parseInt(window.getComputedStyle(logWindow).right);
+      logStartBottom = parseInt(window.getComputedStyle(logWindow).bottom);
+      e.preventDefault();
+    };
+
+    logResizeHandle.onmousedown = (e) => {
+      isResizingLog = true;
+      logStartY = e.clientY; logStartHeight = logWindow.offsetHeight;
+      logStartBottom = parseInt(window.getComputedStyle(logWindow).bottom);
+      e.preventDefault(); e.stopPropagation();
+    };
+
+    logWindow.addEventListener('wheel', (e) => { e.stopPropagation(); }, { passive: false });
+
+    let logEntriesCount = 0;
+    let logBackup = null;
+
+    function updateBadge() {
+        if (logEntriesCount > 0) {
+            logCountBadge.innerText = logEntriesCount;
+            logCountBadge.classList.remove('hidden');
+        } else {
+            logCountBadge.classList.add('hidden');
+        }
+    }
+
+    function addLogEntry(msg, type = 'normal') {
+      if (logEntriesCount === 0) logContent.innerHTML = '';
+      logEntriesCount++;
+      updateBadge();
+      const entry = document.createElement('div');
+      entry.className = `log-entry ${type}`;
+      const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      entry.innerHTML = `<small style="opacity: 0.6; display: block;">${time}</small> ${msg}`;
+      logContent.prepend(entry);
+      logBackup = null; undoBtn.disabled = true;
+    }
+
+    clearBtn.onclick = () => {
+        if (logEntriesCount === 0) return;
+        logBackup = { html: logContent.innerHTML, count: logEntriesCount };
+        logContent.innerHTML = '<div style="text-align: center; color: #94a3b8; font-size: 12px; margin-top: 20px;">No actions recorded yet.</div>';
+        logEntriesCount = 0;
+        updateBadge(); undoBtn.disabled = false;
+    };
+
+    undoBtn.onclick = () => {
+        if (!logBackup) return;
+        logContent.innerHTML = logBackup.html;
+        logEntriesCount = logBackup.count;
+        updateBadge(); logBackup = null; undoBtn.disabled = true;
+    };
+
+    function rollHit() {
+      const d20 = Math.floor(Math.random() * 20) + 1;
+      const total = d20 + 7;
+      const hitMsg = `<b>Attack Roll:</b> ${d20} + 7 = <b>${total}</b>`;
+      addLogEntry(hitMsg, 'hit');
+    }
+
+    function applyDmg() {
+      const dmgVal = 3; // Fixed for now
+      let msg = `<b>Damage Applied:</b> ${dmgVal} points of <b>${cardData.damage_type}</b> damage dealt.`;
+      addLogEntry(msg, 'damage');
+    }
+
+    // New roll system
+    function rollD20(modifier, type = "Hit") {
+      const roll = Math.floor(Math.random() * 20) + 1;
+      const total = roll + modifier;
+      
+      rollTypeLabel.innerText = `${type} Roll`;
+      rollTotalVal.innerText = total;
+      rollMathVal.innerText = `${roll} + (${modifier >= 0 ? '+' : ''}${modifier})`;
+      
+      rollOverlay.classList.remove('show');
+      void rollOverlay.offsetWidth; 
+      rollOverlay.classList.add('show');
+
+      clearTimeout(rollTimeout);
+      rollTimeout = setTimeout(() => {
+        rollOverlay.classList.remove('show');
+      }, 3000);
+    }
+
+    function drawLines() {
+      const defs = svg.querySelector('defs').outerHTML;
+      svg.innerHTML = defs;
+      Object.keys(nodes).forEach(key => {
+        const parent = nodes[key];
+        if (parent.el.classList.contains('hidden')) return;
+        parent.children.forEach(childKey => {
+          const child = nodes[childKey];
+          if (child.el.classList.contains('hidden')) return;
+          const p = parent.el; const c = child.el;
+          const x1 = p.offsetLeft + p.offsetWidth / 2;
+          const y1 = p.offsetTop + p.offsetHeight;
+          const x2 = c.offsetLeft + c.offsetWidth / 2;
+          const y2 = c.offsetTop;
+          if (child.linked) {
+            c.style.left = (p.offsetLeft + p.offsetWidth/2 - c.offsetWidth/2) + 'px';
+            const length = y2 - y1; const offset = length * 0.25;
+            const extension = document.createElementNS("http://www.w3.org/2000/svg", "line");
+            extension.setAttribute("x1", x1); extension.setAttribute("y1", y1 - p.offsetHeight/2); 
+            extension.setAttribute("x2", x1); extension.setAttribute("y2", y1 + offset); 
+            extension.setAttribute("stroke", "black"); extension.setAttribute("stroke-width", "10"); 
+            svg.appendChild(extension);
+            const arrowLine = document.createElementNS("http://www.w3.org/2000/svg", "line");
+            arrowLine.setAttribute("x1", x1); arrowLine.setAttribute("y1", y1 + offset); 
+            arrowLine.setAttribute("x2", x1); arrowLine.setAttribute("y2", y2 + offset); 
+            arrowLine.setAttribute("stroke", "black"); arrowLine.setAttribute("stroke-width", "10"); 
+            arrowLine.setAttribute("marker-end", "url(#large-arrow-black)");
+            svg.appendChild(arrowLine);
+          } else {
+            const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+            const midY = y1 + (y2 - y1) / 2;
+            const d = `M ${x1} ${y1} L ${x1} ${midY} L ${x2} ${midY} L ${x2} ${y2}`;
+            path.setAttribute("d", d); path.setAttribute("stroke", "#94a3b8"); 
+            path.setAttribute("stroke-width", "3"); path.setAttribute("fill", "none"); 
+            path.setAttribute("marker-end", "url(#arrow)");
+            svg.appendChild(path);
+          }
+        });
+      });
+    }
+
+    function applyTransform() {
+      world.style.transform = `translate(${panX}px, ${panY}px) scale(${scale})`;
+      mask.style.backgroundPosition = `${panX}px ${panY}px`;
+      mask.style.backgroundSize = `${40 * scale}px ${40 * scale}px`;
+      drawLines();
+    }
+
+    function centerPrimaryNode() {
+      const primaryNode = nodes.primary.el;
+      scale = 1.0; currentZoomIndex = 1;
+      panX = -(primaryNode.offsetLeft - mask.offsetWidth / 2 + primaryNode.offsetWidth / 2);
+      panY = -(primaryNode.offsetTop - 100);
+      applyTransform();
+    }
+
+    // New folder system functions
+    function setupSteppedScroll(boxId, scrollId, defaultIndex, maxIndex, valuesArray) {
+      const box = document.getElementById(boxId);
+      const scroll = document.getElementById(scrollId);
+      if (!box || !scroll) return;
+      
+      let index = defaultIndex;
+      const itemHeight = 44; 
+      let longPressTimer;
+      let isLongPress = false;
+
+      const update = () => {
+        const offset = index * itemHeight; 
+        scroll.style.transform = `translateY(-${offset}px)`;
+        if (index !== defaultIndex) box.classList.add('modified');
+        else box.classList.remove('modified');
+      };
+
+      update();
+
+      const startHold = () => {
+        isLongPress = false;
+        box.classList.add('pressing');
+        longPressTimer = setTimeout(() => {
+          isLongPress = true;
+          index = defaultIndex;
+          update();
+          box.classList.remove('pressing');
+        }, 1500);
+      };
+
+      const endHold = () => {
+        clearTimeout(longPressTimer);
+        box.classList.remove('pressing');
+      };
+
+      // Mouse events
+      box.addEventListener('mousedown', startHold);
+      window.addEventListener('mouseup', endHold);
+
+      // Touch events
+      box.addEventListener('touchstart', (e) => {
+        startHold();
+      }, { passive: true });
+      box.addEventListener('touchend', endHold);
+
+      box.addEventListener('click', (e) => {
+        if (isLongPress) {
+          isLongPress = false;
+          return;
+        }
+        if (boxId === 'rng-box') {
+          const value = valuesArray[index];
+          addLogEntry(`<b>Range changed to:</b> ${value}`);
+        }
+      });
+
+      box.addEventListener('wheel', (e) => {
+        e.preventDefault();
+        if (e.deltaY > 0 && index > 0) index--;
+        else if (e.deltaY < 0 && index < maxIndex) index++;
+        update();
+      }, { passive: false });
+
+      let touchStartY = 0;
+      box.addEventListener('touchstart', (e) => { touchStartY = e.touches[0].clientY; });
+      box.addEventListener('touchmove', (e) => {
+        const touchEndY = e.touches[0].clientY;
+        const diff = touchStartY - touchEndY;
+        if (Math.abs(diff) > 25) {
+          e.preventDefault(); 
+          clearTimeout(longPressTimer);
+          box.classList.remove('pressing');
+          if (diff < 0 && index > 0) { index--; touchStartY = touchEndY; }
+          else if (diff > 0 && index < maxIndex) { index++; touchStartY = touchEndY; }
+          update();
+        }
+      }, { passive: false });
+    }
+
+    function updatePositions() {
+      const activeInStack = order.filter(idx => visibleStates[idx]);
+      const visibleCount = activeInStack.length;
+      const baseOffset = 35;
+      const stackOffset = visibleCount > 0 ? (visibleCount - 1) * baseOffset : 0;
+      
+      document.documentElement.style.setProperty(
+        '--folder-dynamic-height', 
+        `calc(var(--card-height) + ${stackOffset}px + (var(--folder-offset) * 2))`
+      );
+
+      cards.forEach((card, idx) => {
+        card.classList.remove('at-pos-1', 'at-pos-2', 'at-pos-3', 'hidden');
+        const stackPos = activeInStack.indexOf(idx);
+        if (!visibleStates[idx]) card.classList.add('hidden');
+        else if (stackPos !== -1) card.classList.add(`at-pos-${stackPos + 1}`);
+      });
+
+      if (activeInStack.length > 0) activeLabelText.innerText = cards[activeInStack[0]].dataset.label;
+      else activeLabelText.innerText = "Empty Folder";
+    }
+
+    function handleCardToggle(cardIndex, toggleEl) {
+      toggleEl.classList.toggle('active');
+      visibleStates[cardIndex] = toggleEl.classList.contains('active');
+      if (!visibleStates[cardIndex]) {
+        const pos = order.indexOf(cardIndex);
+        order.splice(pos, 1);
+        order.push(cardIndex);
+      }
+      updatePositions();
+    }
+
+    mask.addEventListener('wheel', (e) => {
+      e.preventDefault();
+      const rect = mask.getBoundingClientRect();
+      const mouseX = e.clientX - rect.left; const mouseY = e.clientY - rect.top;
+      const worldX = (mouseX - panX) / scale; const worldY = (mouseY - panY) / scale;
+      if (e.deltaY < 0) { if (currentZoomIndex < ZOOM_LEVELS.length - 1) currentZoomIndex++; } 
+      else { if (currentZoomIndex > 0) currentZoomIndex--; }
+      scale = ZOOM_LEVELS[currentZoomIndex];
+      panX = mouseX - worldX * scale; panY = mouseY - worldY * scale;
+      applyTransform();
+    }, { passive: false });
+
+    mask.onmousedown = (e) => {
+      const target = e.target.closest('.node, .card-stack');
+      if (editMode && target && (target.classList.contains('node') || target.classList.contains('card-stack'))) { isDraggingNode = target; } 
+      else { isPanning = true; }
+      lastTouchX = e.clientX; lastTouchY = e.clientY;
+    };
+
+    window.onmousemove = (e) => {
+      if (isDraggingLog) {
+        const dx = e.clientX - logStartX; const dy = e.clientY - logStartY;
+        logWindow.style.right = (logStartRight - dx) + 'px';
+        logWindow.style.bottom = (logStartBottom - dy) + 'px';
+        return;
+      }
+      if (isResizingLog) {
+        const dy = e.clientY - logStartY; const newHeight = logStartHeight + dy; const newBottom = logStartBottom - dy;
+        if (newHeight > 150) { logWindow.style.height = newHeight + 'px'; logWindow.style.bottom = newBottom + 'px'; }
+        return;
+      }
+      if (isDraggingNode) {
+        const dx = (e.clientX - lastTouchX) / scale; const dy = (e.clientY - lastTouchY) / scale;
+        isDraggingNode.style.left = (isDraggingNode.offsetLeft + dx) + 'px';
+        isDraggingNode.style.top = (isDraggingNode.offsetTop + dy) + 'px';
+        lastTouchX = e.clientX; lastTouchY = e.clientY;
+        drawLines();
+      } else if (isPanning) {
+        panX += (e.clientX - lastTouchX); panY += (e.clientY - lastTouchY);
+        lastTouchX = e.clientX; lastTouchY = e.clientY;
+        applyTransform();
+      }
+    };
+
+    window.onmouseup = () => { 
+      isPanning = false; 
+      isDraggingNode = null; 
+      isDraggingLog = false; 
+      isResizingLog = false;
+    };
+
+    // Divine Strike toggle (removed - now handled by folder system)
+    
+    // Action squares toggle
+    document.getElementById('square-1').onclick = (e) => {
+      e.stopPropagation();
+      document.getElementById('square-1').classList.toggle('active');
+    };
+
+    document.getElementById('square-2').onclick = (e) => {
+      e.stopPropagation();
+      document.getElementById('square-2').classList.toggle('active');
+    };
+
+    document.getElementById('square-3').onclick = (e) => {
+      e.stopPropagation();
+      document.getElementById('square-3').classList.toggle('active');
+    };
+
+    // New folder system event handlers
+    globalToggle.addEventListener('click', () => {
+      const isActive = globalToggle.classList.toggle('active');
+      sidePanel.classList.toggle('show');
+    });
+
+    cards.forEach((card, index) => {
+      const footer = card.querySelector('.card-footer');
+      footer.addEventListener('click', (e) => {
+        const activeInStack = order.filter(idx => visibleStates[idx]);
+        if (visibleStates[index] && activeInStack.indexOf(index) !== 0) {
+          card.classList.add('swapping');
+          setTimeout(() => {
+            const orderIdx = order.indexOf(index);
+            const clickedCardIdx = order.splice(orderIdx, 1)[0];
+            order.unshift(clickedCardIdx);
+            card.classList.remove('swapping');
+            updatePositions();
+          }, 300);
+        }
+      });
+
+      // Add click handlers for stat boxes
+      const statBoxes = card.querySelectorAll('.stat-box');
+      statBoxes.forEach((box, boxIndex) => {
+        box.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const statLabel = box.parentElement.querySelector('.stat-label').innerText;
+          const statValue = box.innerText;
+          
+          if (statLabel === 'HIT') {
+            const modifier = parseInt(statValue.replace('+', ''));
+            rollD20(modifier, 'Hit');
+            addLogEntry(`<b>Attack Roll:</b> ${modifier >= 0 ? '+' : ''}${modifier} modifier`);
+          } else if (statLabel === 'DMG') {
+            const currentValue = statValue || '3';
+            
+            // Show roll overlay with damage value and type
+            rollTypeLabel.innerText = "Bludgeoning Damage";
+            rollTotalVal.innerText = currentValue;
+            rollMathVal.innerText = "bludgeoning";
+
+            rollOverlay.classList.remove('show');
+            void rollOverlay.offsetWidth;
+            rollOverlay.classList.add('show');
+
+            clearTimeout(rollTimeout);
+            rollTimeout = setTimeout(() => {
+              rollOverlay.classList.remove('show');
+            }, 3000);
+            
+            addLogEntry(`<b>Damage Applied:</b> ${currentValue} points of <b>bludgeoning</b> damage dealt.`);
+          } else if (statLabel === 'RAD') {
+            const modifier = parseInt(statValue.replace('+', ''));
+            rollD20(modifier, 'Divine');
+            addLogEntry(`<b>Divine Strike Roll:</b> ${modifier >= 0 ? '+' : ''}${modifier} modifier`);
+          } else if (statLabel === 'SAVE') {
+            addLogEntry(`<b>Save DC:</b> ${statValue}`);
+          } else if (statLabel === 'NEC') {
+            addLogEntry(`<b>Necrotic Damage:</b> ${statValue}`);
+          }
+        });
+      });
+    });
+
+    function setNodeVisibility(nodeKey, isVisible) {
+      const node = nodes[nodeKey]; if (!node) return;
+      if (isVisible) node.el.classList.remove('hidden');
+      else { node.el.classList.add('hidden'); node.children.forEach(childKey => setNodeVisibility(childKey, false)); }
+    }
+
+    function toggleChildren(parentKey) {
+      const parent = nodes[parentKey]; if (!parent || parent.children.length === 0) return;
+      const newState = nodes[parent.children[0]].el.classList.contains('hidden');
+      parent.children.forEach(childKey => setNodeVisibility(childKey, newState));
+      drawLines();
+    }
+
+    nodes.primary.el.onclick = () => { if(!editMode) toggleChildren('primary'); };
+    nodes.melee.el.onclick = () => { if(!editMode) toggleChildren('melee'); };
+    nodes.unarmed.el.onclick = () => { if(!editMode) toggleChildren('unarmed'); };
+
+    document.getElementById('toggle-edit').onclick = function() {
+      editMode = !editMode;
+      this.classList.toggle('active', editMode);
+      this.innerText = editMode ? "Edit Layout: ON" : "Edit Layout: OFF";
+    };
+
+    const logToggleBtn = document.getElementById('toggle-log');
+    const toggleLog = () => { logWindow.classList.toggle('visible'); logToggleBtn.classList.toggle('active'); };
+    logToggleBtn.onclick = toggleLog;
+    document.getElementById('close-log').onclick = toggleLog;
+    document.getElementById('reset-view').onclick = centerPrimaryNode;
+    
+    // Initialize folder system
+    setupSteppedScroll('rng-box', 'rng-scroll', 3, 3, ["20ft", "15ft", "10ft", "5ft"]);
+    
+    // Setup DMG scroll functionality (1-20, default 3)
+    const dmgScroll = document.getElementById('dmg-scroll');
+    const dmgValues = [];
+    if (dmgScroll) {
+      for (let i = 20; i >= 1; i--) {
+        const valStr = String(i);
+        dmgValues.push(valStr);
+        const div = document.createElement('div');
+        div.className = 'scroll-item';
+        div.textContent = valStr;
+        dmgScroll.appendChild(div);
+      }
+    }
+    setupSteppedScroll('dmg-box', 'dmg-scroll', 17, 19, dmgValues);
+    
+    updatePositions();
+    
+    window.onload = centerPrimaryNode;
+    window.onresize = drawLines;
+  })();
+</script>
+</body>
+</html>
